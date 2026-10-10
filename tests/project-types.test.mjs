@@ -43,9 +43,10 @@ test("a project that has not said its type renders nothing anywhere", () => {
 });
 
 test("a known type answers with its own copy", () => {
-  assert.equal(projectTypeLabel("pet"), projectTypeMeta.pet.label);
+  assert.equal(projectTypeLabel("pet", "id"), projectTypeMeta.pet.label);
+  assert.equal(projectTypeLabel("pet"), "Pet project");
   assert.equal(projectTypeTone("commercial"), projectTypeMeta.commercial.tone);
-  assert.equal(projectTypeContribution("community"), projectTypeMeta.community.contribution);
+  assert.equal(projectTypeContribution("community", "id"), projectTypeMeta.community.contribution);
 });
 
 /*
