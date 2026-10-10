@@ -23,7 +23,7 @@ export const instant = false;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Masuk — Ahsan Project", "Sign in — Ahsan Project"),
+    title: tx(locale, "Masuk — Builders", "Sign in — Builders"),
     description: tx(locale, "Masuk untuk menampilkan proyekmu, bergabung dalam diskusi, dan membantu membangun proyek orang lain.", "Sign in to show your projects, join discussions, and help build other people's projects."),
     robots: { index: false },
   };
@@ -70,7 +70,7 @@ export default async function SignInPage({ searchParams }: { searchParams?: Sear
             </p>
           </div>
 
-          <div className="signin-preview" aria-label={tx(locale, "Pratinjau aktivitas Ahsan Project", "Ahsan Project activity preview")}>
+          <div className="signin-preview" aria-label={tx(locale, "Pratinjau aktivitas Builders", "Builders activity preview")}>
             <div className="signin-preview-top">
               <span>{tx(locale, "Aktivitas proyek", "Project activity")}</span>
               <small>{tx(locale, "Hari ini", "Today")}</small>
@@ -125,7 +125,7 @@ export default async function SignInPage({ searchParams }: { searchParams?: Sear
             )}
 
             <p className="auth-switch">
-              {tx(locale, "Baru di Ahsan Project?", "New to Ahsan Project?")}{" "}
+              {tx(locale, "Baru di Builders?", "New to Builders?")}{" "}
               <Link href={`/signup?next=${encodeURIComponent(next)}`}>{tx(locale, "Buat akun", "Create an account")}</Link>
             </p>
             <p className="signin-privacy">

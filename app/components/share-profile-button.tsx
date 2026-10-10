@@ -36,8 +36,8 @@ export function ShareProfileButton({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${name} — Ahsan Project`,
-          text: tx(`Lihat profil dan karya ${name} di Ahsan Project.`, `View ${name}'s profile and work on Ahsan Project.`),
+          title: `${name} — Builders`,
+          text: tx(`Lihat profil dan karya ${name} di Builders.`, `View ${name}'s profile and work on Builders.`),
           url,
         });
         showStatus("shared");

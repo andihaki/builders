@@ -14,7 +14,7 @@ export default function Loading() {
         <div className="topbar-inner">
           <div className="brand" aria-hidden="true">
             <Logo className="brand-mark" />
-            <span><strong>ahsan</strong><span className="brand-alt">project</span></span>
+            <span><strong>builders</strong><span className="brand-alt">.swegrowth</span></span>
           </div>
           <nav className="desktop-nav generic-loading-nav" aria-hidden="true">
             {[68, 74, 88, 72].map((width) => <Skeleton key={width} height={12} width={width} />)}

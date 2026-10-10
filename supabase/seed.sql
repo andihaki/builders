@@ -1,4 +1,4 @@
--- Seed data for Ahsan Project.
+-- Seed data for Builders.
 --
 -- Generated from app/lib/seed.ts — run `npm run db:seed` after editing that
 -- file rather than editing this one.

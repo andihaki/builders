@@ -17,7 +17,7 @@ maintainer team changes.
 - Make sure production data and database dumps are not tracked. Supabase
   `service_role`, Netlify, email-provider, and database credentials must stay in
   their respective secret stores.
-- Set the GitHub description, `https://ahsanproject.id` website, social preview,
+- Set the GitHub description, `https://builders.swegrowth.id` website, social preview,
   and topics such as `nextjs`, `supabase`, `typescript`, `netlify`, and
   `open-source`.
 

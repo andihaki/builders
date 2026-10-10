@@ -26,9 +26,9 @@ export function Arrow({ diagonal = false }: { diagonal?: boolean }) {
 
 export function Brand({ footer = false, locale }: { footer?: boolean; locale: Locale }) {
   return (
-    <Link className={`brand ${footer ? "footer-brand" : ""}`} href="/" aria-label={tx(locale, "Beranda Ahsan Project", "Ahsan Project home")}>
+    <Link className={`brand ${footer ? "footer-brand" : ""}`} href="/" aria-label={tx(locale, "Beranda Builders", "Builders home")}>
       <Logo className="brand-mark" />
-      <span><strong>ahsan</strong><span className="brand-alt">project</span></span>
+      <span><strong>builders</strong><span className="brand-alt">.swegrowth</span></span>
     </Link>
   );
 }
@@ -406,7 +406,7 @@ export async function SiteFooter() {
             now that the header no longer carries the switcher directly. */}
         <Link href="/account/language">{tx(locale, "Bahasa", "Language")}</Link>
       </nav>
-      <small>© <CopyrightYear /> Ahsan Project</small>
+      <small>© <CopyrightYear /> Builders</small>
     </footer>
   );
 }

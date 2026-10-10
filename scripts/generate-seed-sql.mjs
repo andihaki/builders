@@ -73,7 +73,7 @@ ${seats}${tasks}${updates}`;
   })
   .join("\n");
 
-const sql = `-- Seed data for Ahsan Project.
+const sql = `-- Seed data for Builders.
 --
 -- Generated from app/lib/seed.ts — run \`npm run db:seed\` after editing that
 -- file rather than editing this one.

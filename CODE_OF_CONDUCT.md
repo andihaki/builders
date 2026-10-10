@@ -2,7 +2,7 @@
 
 ## Our commitment
 
-We are committed to making participation in Ahsan Project a welcoming,
+We are committed to making participation in Builders a welcoming,
 harassment-free experience for everyone, regardless of background, identity,
 experience, or level of technical knowledge.
 

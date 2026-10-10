@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Ahsan Project is currently developed from `main` and has not started a stable
+Builders is currently developed from `main` and has not started a stable
 release series. Security fixes are made on `main`; older commits and deployments
 are not supported.
 

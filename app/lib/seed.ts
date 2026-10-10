@@ -1,5 +1,5 @@
 /**
- * The projects Ahsan Project opens with.
+ * The projects Builders opens with.
  *
  * This is the source of truth for two things: `supabase/seed.sql`, and the
  * read-only fallback `app/lib/data.ts` serves when no database is attached.

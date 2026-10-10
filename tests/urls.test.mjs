@@ -121,21 +121,21 @@ test("a project logo accepts only ordinary web image URLs", () => {
 });
 
 test("an origin keeps only its scheme, host, and port", () => {
-  assert.equal(normalizeOrigin("https://ahsanproject.id/"), "https://ahsanproject.id");
-  assert.equal(normalizeOrigin("  https://ahsanproject.id/get-started?a=1  "), "https://ahsanproject.id");
+  assert.equal(normalizeOrigin("https://builders.swegrowth.id/"), "https://builders.swegrowth.id");
+  assert.equal(normalizeOrigin("  https://builders.swegrowth.id/get-started?a=1  "), "https://builders.swegrowth.id");
   assert.equal(normalizeOrigin("http://localhost:3000"), "http://localhost:3000");
 });
 
 test("anything that is not an ordinary web origin is refused", () => {
-  for (const nonsense of ["", null, undefined, "ahsanproject.id", "javascript:alert(1)", "/get-started"]) {
+  for (const nonsense of ["", null, undefined, "builders.swegrowth.id", "javascript:alert(1)", "/get-started"]) {
     assert.equal(normalizeOrigin(nonsense), null, `${nonsense} bukan origin`);
   }
 });
 
 test("a configured site URL is where a sign-in starts", () => {
   assert.equal(
-    pinnedOrigin({ NEXT_PUBLIC_SITE_URL: "https://ahsanproject.id/" }),
-    "https://ahsanproject.id",
+    pinnedOrigin({ NEXT_PUBLIC_SITE_URL: "https://builders.swegrowth.id/" }),
+    "https://builders.swegrowth.id",
   );
   // Netlify's own primary address, and it wins over nothing else being set.
   assert.equal(
@@ -144,11 +144,11 @@ test("a configured site URL is where a sign-in starts", () => {
   );
   assert.equal(
     pinnedOrigin({
-      NEXT_PUBLIC_SITE_URL: "https://ahsanproject.id",
+      NEXT_PUBLIC_SITE_URL: "https://builders.swegrowth.id",
       CONTEXT: "production",
       URL: "https://ahsanproject-dev.netlify.app",
     }),
-    "https://ahsanproject.id",
+    "https://builders.swegrowth.id",
   );
 });
 
@@ -156,7 +156,7 @@ test("a preview deploy and a laptop keep their own address", () => {
   // On a deploy preview Netlify still reports production in URL; pinning it
   // would send a reviewer to sign in on the live site instead.
   assert.equal(
-    pinnedOrigin({ CONTEXT: "deploy-preview", URL: "https://ahsanproject.id" }),
+    pinnedOrigin({ CONTEXT: "deploy-preview", URL: "https://builders.swegrowth.id" }),
     null,
   );
   assert.equal(pinnedOrigin({}), null);

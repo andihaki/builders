@@ -51,7 +51,7 @@ const REQUEST_HEADERS = {
   Accept: "text/html,application/xhtml+xml",
   "Accept-Language": "en;q=0.9,id;q=0.8,*;q=0.5",
   "User-Agent":
-    "Mozilla/5.0 (compatible; AhsanProjectBot/1.0; +https://ahsanproject.id)",
+    "Mozilla/5.0 (compatible; BuildersBot/1.0; +https://builders.swegrowth.id)",
 };
 
 /**

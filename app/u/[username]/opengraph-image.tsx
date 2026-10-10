@@ -11,7 +11,7 @@ import { tx } from "../../lib/locale";
  */
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Ahsan Project";
+export const alt = "Builders";
 
 const PAPER = "#f8f6f0";
 const INK = "#183d34";
@@ -38,7 +38,7 @@ export default async function Image({ params }: { params: Promise<{ username: st
             fontWeight: 700,
           }}
         >
-          Ahsan Project
+          Builders
         </div>
       ),
       size,
@@ -85,7 +85,7 @@ export default async function Image({ params }: { params: Promise<{ username: st
             color: MUTED,
           }}
         >
-          <div style={{ display: "flex" }}>AHSAN PROJECT</div>
+          <div style={{ display: "flex" }}>BUILDERS</div>
           <div style={{ display: "flex" }}>{tx(locale, "PORTOFOLIO", "PORTFOLIO")}</div>
         </div>
 

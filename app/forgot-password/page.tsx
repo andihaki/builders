@@ -9,8 +9,8 @@ import { tx } from "../lib/locale";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Lupa kata sandi — Ahsan Project", "Forgot password — Ahsan Project"),
-    description: tx(locale, "Minta tautan untuk mengatur ulang kata sandi akun Ahsan Project.", "Request a link to reset your Ahsan Project account password."),
+    title: tx(locale, "Lupa kata sandi — Builders", "Forgot password — Builders"),
+    description: tx(locale, "Minta tautan untuk mengatur ulang kata sandi akun Builders.", "Request a link to reset your Builders account password."),
     robots: { index: false },
   };
 }

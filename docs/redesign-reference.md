@@ -6,11 +6,11 @@ alasan di balik tampilan sekarang bisa dibaca ulang saat mengubahnya lagi.
 
 ---
 
-# Riset UI/UX Ahsan Project
+# Riset UI/UX Builders
 
 ## Tujuan produk
 
-Ahsan Project bukan sekadar galeri ide atau landing page. Produk ini perlu mempertemukan empat kebutuhan dalam satu alur:
+Builders bukan sekadar galeri ide atau landing page. Produk ini perlu mempertemukan empat kebutuhan dalam satu alur:
 
 1. Menemukan proyek yang relevan.
 2. Memahami kondisi dan kebutuhan proyek dengan cepat.

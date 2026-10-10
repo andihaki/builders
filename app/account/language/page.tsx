@@ -15,8 +15,8 @@ import { tx } from "../../lib/locale";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Bahasa — Ahsan Project", "Language — Ahsan Project"),
-    description: tx(locale, "Pilih bahasa tampilan Ahsan Project.", "Choose the display language for Ahsan Project."),
+    title: tx(locale, "Bahasa — Builders", "Language — Builders"),
+    description: tx(locale, "Pilih bahasa tampilan Builders.", "Choose the display language for Builders."),
     robots: { index: false },
   };
 }
@@ -36,8 +36,8 @@ export default async function LanguageSettingsPage() {
         <p className="lede">
           {tx(
             locale,
-            "Berlaku di seluruh Ahsan Project sampai kamu menggantinya lagi di sini.",
-            "Applies across Ahsan Project until you change it again here.",
+            "Berlaku di seluruh Builders sampai kamu menggantinya lagi di sini.",
+            "Applies across Builders until you change it again here.",
           )}
         </p>
 

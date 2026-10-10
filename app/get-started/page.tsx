@@ -24,7 +24,7 @@ export const instant = false;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Langkah berikutnya — Ahsan Project", "Next steps — Ahsan Project"),
+    title: tx(locale, "Langkah berikutnya — Builders", "Next steps — Builders"),
     description: tx(locale, "Langkah yang tersisa agar proyekmu terlihat dan profilmu mudah ditemukan.", "What remains to make your projects visible and your profile discoverable."),
     robots: { index: false },
   };

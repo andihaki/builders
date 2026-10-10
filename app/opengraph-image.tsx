@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { currentLocale } from "./lib/locale-server";
 import { tx } from "./lib/locale";
 
-export const alt = "Ahsan Project";
+export const alt = "Builders";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -82,7 +82,7 @@ export default async function OpenGraphImage() {
             </svg>
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: "-1.5px" }}>
-            ahsan<span style={{ color: "#315f51", display: "flex", fontWeight: 650 }}>project</span>
+            builders<span style={{ color: "#315f51", display: "flex", fontWeight: 650 }}>.swegrowth</span>
           </div>
         </div>
 
@@ -113,7 +113,7 @@ export default async function OpenGraphImage() {
           </div>
         </div>
 
-        <div style={{ color: "#667970", display: "flex", fontSize: 22 }}>ahsanproject.id</div>
+        <div style={{ color: "#667970", display: "flex", fontSize: 22 }}>builders.swegrowth.id</div>
       </div>
     </div>,
     size,

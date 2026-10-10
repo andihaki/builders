@@ -95,17 +95,17 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const [{ slug }, locale] = await Promise.all([params, currentLocale()]);
   const project = await getProject(slug);
-  if (!project) return { title: tx(locale, "Proyek tidak ditemukan — Ahsan Project", "Project not found — Ahsan Project") };
+  if (!project) return { title: tx(locale, "Proyek tidak ditemukan — Builders", "Project not found — Builders") };
 
   return {
-    title: `${project.title} — Ahsan Project`,
+    title: `${project.title} — Builders`,
     // What it is doing now says more than what it is, when there is one.
     description: project.nowText || projectBlurb(project),
     alternates: { canonical: `/projects/${project.slug}` },
     // The card image comes from opengraph-image.tsx beside this file.
     openGraph: {
       type: "article",
-      title: `${project.title} — Ahsan Project`,
+      title: `${project.title} — Builders`,
       description: project.nowText || projectBlurb(project),
       url: `/projects/${project.slug}`,
     },

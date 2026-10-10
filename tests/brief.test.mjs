@@ -41,8 +41,8 @@ test("written fields are held to the ceiling the database enforces", () => {
 test("links are checked only when one was given", () => {
   for (const field of ["docUrl", "repoUrl", "liveUrl", "logoUrl"]) {
     assert.equal(validateBrief(brief({ [field]: "" }))[field], undefined);
-    assert.match(validateBrief(brief({ [field]: "ahsanproject.id" }))[field], /http/);
-    assert.equal(validateBrief(brief({ [field]: "https://ahsanproject.id" }))[field], undefined);
+    assert.match(validateBrief(brief({ [field]: "builders.swegrowth.id" }))[field], /http/);
+    assert.equal(validateBrief(brief({ [field]: "https://builders.swegrowth.id" }))[field], undefined);
   }
 });
 
@@ -56,12 +56,12 @@ test("a card falls back through the summary, the highlight, then the domain", ()
   const project = {
     tagline: "A clear summary",
     highlight: "Because it is genuinely useful",
-    liveUrl: "https://www.ahsanproject.id/x",
+    liveUrl: "https://www.builders.swegrowth.id/x",
     repoUrl: "",
   };
   assert.equal(projectBlurb(project), "A clear summary");
   assert.equal(projectBlurb({ ...project, tagline: "" }), "Because it is genuinely useful");
-  assert.equal(projectBlurb({ ...project, tagline: "", highlight: "" }), "ahsanproject.id");
+  assert.equal(projectBlurb({ ...project, tagline: "", highlight: "" }), "builders.swegrowth.id");
   assert.equal(
     projectBlurb({ tagline: "", highlight: "", liveUrl: "", repoUrl: "https://github.com/a/b" }),
     "github.com",

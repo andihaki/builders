@@ -53,7 +53,7 @@ export default function GlobalError({
             {tx(locale, "Terjadi kesalahan.", "Something went wrong.")}
           </h1>
           <p style={{ color: "#68746d", lineHeight: 1.7, marginBottom: 24 }}>
-            {tx(locale, "Ahsan Project tidak dapat dimuat. Biasanya ini hanya sementara, jadi coba lagi sebentar lagi.", "Ahsan Project could not load. This is usually temporary, so please try again shortly.")}
+            {tx(locale, "Builders tidak dapat dimuat. Biasanya ini hanya sementara, jadi coba lagi sebentar lagi.", "Builders could not load. This is usually temporary, so please try again shortly.")}
           </p>
           <button
             type="button"

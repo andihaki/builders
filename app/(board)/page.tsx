@@ -24,7 +24,7 @@ import { tx, type Locale } from "../lib/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
-  const title = tx(locale, "Ahsan Project — Tampilkan Karyamu dan Bangun Portofolio yang Berdampak", "Ahsan Project — Show Your Work and Build a Portfolio That Matters");
+  const title = tx(locale, "Builders — Tampilkan Karyamu dan Bangun Portofolio yang Berdampak", "Builders — Show Your Work and Build a Portfolio That Matters");
   const description = tx(locale, "Ruang publik untuk menampilkan karyamu, menunjukkan karya nyata, dan membuatmu lebih mudah ditemukan oleh tim yang tepat.", "A public place to build tech projects, show real work, and get discovered by the right team.");
   return { title, description, alternates: { canonical: "/" }, openGraph: shareCard({ title, description, url: "/" }) };
 }
@@ -74,7 +74,7 @@ export default async function Home() {
               {tx(locale, "Ruang publik untuk membangun dan mengembangkan proyek techmu, membuktikan keahlianmu, dan berkolaborasi.", "A public place to build and grow your tech project, prove your skill and collaborate.")}
             </p>
 
-            <div className="home-hero-actions" aria-label={tx(locale, "Mulai menggunakan Ahsan Project", "Get started with Ahsan Project")}>
+            <div className="home-hero-actions" aria-label={tx(locale, "Mulai menggunakan Builders", "Get started with Builders")}>
               <Link className="home-hero-primary" href="/new">
                 <span aria-hidden="true">+</span> {tx(locale, "Tambah proyek", "Add a project")}
               </Link>
@@ -83,7 +83,7 @@ export default async function Home() {
               </Link>
             </div>
 
-            <div className="landing-counts" aria-label={tx(locale, "Aktivitas Ahsan Project saat ini", "Current Ahsan Project activity")}>
+            <div className="landing-counts" aria-label={tx(locale, "Aktivitas Builders saat ini", "Current Builders activity")}>
               <span className="landing-count">
                 <strong>{people.length}</strong>
                 <span>{tx(locale, "orang", "people")}</span>
@@ -252,14 +252,14 @@ export default async function Home() {
               <li><span>02</span> {tx(locale, "Tidak perlu deployment", "No deployment required")}</li>
               <li><span>03</span> {tx(locale, "Keahlian dibuktikan melalui karya yang dirilis", "Skills proven by shipped work")}</li>
             </ul>
-            <a className="portfolio-story-link" href="https://ahsanproject.id/u/zikrul-ihsan">
+            <a className="portfolio-story-link" href="https://builders.swegrowth.id/u/zikrul-ihsan">
               {tx(locale, "Lihat portofolio aktif", "See a live portfolio")} <Arrow />
             </a>
           </div>
 
           <a
             className="portfolio-preview"
-            href="https://ahsanproject.id/u/zikrul-ihsan"
+            href="https://builders.swegrowth.id/u/zikrul-ihsan"
             aria-label={tx(locale, "Lihat portofolio Zikrul Ihsan", "See Zikrul Ihsan's portfolio")}
           >
             <div className="portfolio-preview-label">
@@ -283,7 +283,7 @@ export default async function Home() {
               <div><strong>6</strong><span>{tx(locale, "proyek dibangun", "projects built")}</span></div>
               <div><span>{tx(locale, "Karya pilihan", "Selected work")}</span><p>Swegrowth · Main Aman · CariKontak</p></div>
             </div>
-            <span className="portfolio-preview-url"><span>ahsanproject.id/u/zikrul-ihsan</span> <Arrow diagonal /></span>
+            <span className="portfolio-preview-url"><span>builders.swegrowth.id/u/zikrul-ihsan</span> <Arrow diagonal /></span>
           </a>
         </section>
 
@@ -302,7 +302,7 @@ export default async function Home() {
             <Link className="talent-story-link" href="/people">{tx(locale, "Jelajahi tech talent", "Browse tech talent")} <Arrow /></Link>
           </div>
 
-          <div className="talent-preview" aria-label={tx(locale, "Tech talent di Ahsan Project", "Tech talent on Ahsan Project")}>
+          <div className="talent-preview" aria-label={tx(locale, "Tech talent di Builders", "Tech talent on Builders")}>
             <div className="talent-preview-head">
               <span>{tx(locale, "Tech talent dengan karya yang terlihat", "Tech talent with visible work")}</span>
               <Link href="/people">{tx(locale, "Lihat semua", "View all")}</Link>

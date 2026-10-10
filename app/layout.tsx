@@ -26,9 +26,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
     metadataBase: new URL(siteUrl),
-    title: { default: "Ahsan Project", template: "%s" },
+    title: { default: "Builders", template: "%s" },
     openGraph: {
-      siteName: "Ahsan Project",
+      siteName: "Builders",
       type: "website",
       locale: locale === "id" ? "id_ID" : "en_US",
       images: [defaultShareImage],

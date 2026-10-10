@@ -10,7 +10,7 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# talents.ahsanproject.id is an alias of this site that exists only to point
+# talents.builders.swegrowth.id is an alias of this site that exists only to point
 # people at the directory. A full URL in `from` matches the host the browser
 # asked for, so the rule fires for that name alone, and `force` is what makes it
 # win over the catch-all the Next.js plugin adds — without it the whole app
@@ -18,14 +18,14 @@
 # `from` matches only the scheme it names, and plain http is what arrives in the
 # window before Netlify has issued a certificate for the alias.
 [[redirects]]
-  from = "https://talents.ahsanproject.id/*"
-  to = "https://ahsanproject.id/people"
+  from = "https://talents.builders.swegrowth.id/*"
+  to = "https://builders.swegrowth.id/people"
   status = 301
   force = true
 
 [[redirects]]
-  from = "http://talents.ahsanproject.id/*"
-  to = "https://ahsanproject.id/people"
+  from = "http://talents.builders.swegrowth.id/*"
+  to = "https://builders.swegrowth.id/people"
   status = 301
   force = true
 

@@ -1,6 +1,6 @@
-# Contributing to Ahsan Project
+# Contributing to Builders
 
-Thank you for helping make Ahsan Project better. Contributions can be code,
+Thank you for helping make Builders better. Contributions can be code,
 tests, documentation, design feedback, bug reports, or feature ideas. English
 and Indonesian are both welcome.
 

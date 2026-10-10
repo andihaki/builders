@@ -9,11 +9,11 @@ import { tx } from "../lib/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
-  const title = tx(locale, "Masukan — Ahsan Project", "Feedback — Ahsan Project");
+  const title = tx(locale, "Masukan — Builders", "Feedback — Builders");
   const description = tx(
     locale,
-    "Ceritakan apa yang error, bikin bingung, atau kamu harap ada di Ahsan Project. Tidak perlu punya akun.",
-    "Tell us what is broken, what is confusing, or what you wish existed on Ahsan Project. No account needed.",
+    "Ceritakan apa yang error, bikin bingung, atau kamu harap ada di Builders. Tidak perlu punya akun.",
+    "Tell us what is broken, what is confusing, or what you wish existed on Builders. No account needed.",
   );
   return {
     title,

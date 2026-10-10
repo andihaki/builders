@@ -7,7 +7,7 @@ import { normalizeOrigin, originFromHeaders } from "./urls";
  *
  * **The request's own origin wins, and that is the whole point.** Every one of
  * these journeys leaves a cookie behind on the origin it started from and needs
- * to find it again on the way back. Sign-in on `ahsanproject.id` writes the
+ * to find it again on the way back. Sign-in on `builders.swegrowth.id` writes the
  * PKCE code verifier there; if the callback is sent to a second name for the
  * same site, `exchangeCodeForSession` looks for that verifier on an origin that
  * never had it, and the login dies with nothing to show for itself. A site with

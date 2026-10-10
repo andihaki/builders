@@ -1,5 +1,5 @@
 /** Canonical origin for metadata, share cards, and the sitemap. */
-export const siteUrl = "https://ahsanproject.id";
+export const siteUrl = "https://builders.swegrowth.id";
 
 /** The shared picture, for pages that do not draw a card of their own. */
 export const defaultShareImage = { url: "/opengraph-image", width: 1200, height: 630 };

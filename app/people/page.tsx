@@ -30,7 +30,7 @@ import { profileReady } from "../lib/next-steps";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
-  const title = "Talent Pool — Ahsan Project";
+  const title = "Talent Pool — Builders";
   const description = tx(locale, "Cari tech talent berdasarkan peran, keahlian, pengalaman proyek, dan status peluang.", "Find tech talent by role, skills, project experience, and opportunity status.");
   return { title, description, alternates: { canonical: "/people" }, openGraph: shareCard({ title, description, url: "/people" }) };
 }

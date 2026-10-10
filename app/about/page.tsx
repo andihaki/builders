@@ -7,11 +7,11 @@ import { tx } from "../lib/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
-  const title = tx(locale, "Tentang Kami — Ahsan Project", "About Us — Ahsan Project");
+  const title = tx(locale, "Tentang Kami — Builders", "About Us — Builders");
   const description = tx(
     locale,
-    "Bukan cuma open source. Ahsan Project terbuka buat semua peran—engineer, PM, desainer, marketing, data—supaya sebuah project bisa benar-benar berdampak.",
-    "Not just open source. Ahsan Project is open to every role—engineers, PMs, designers, marketers, data people—so a project can actually make an impact.",
+    "Bukan cuma open source. Builders terbuka buat semua peran—engineer, PM, desainer, marketing, data—supaya sebuah project bisa benar-benar berdampak.",
+    "Not just open source. Builders is open to every role—engineers, PMs, designers, marketers, data people—so a project can actually make an impact.",
   );
   return {
     title,
@@ -95,8 +95,8 @@ const BENEFITS: readonly (readonly [string, string, string, string])[] = [
 
 const FAQ: readonly (readonly [string, string, string, string])[] = [
   [
-    "Ahsan Project itu apa?",
-    "What is Ahsan Project?",
+    "Builders itu apa?",
+    "What is Builders?",
     "Ruang publik buat naruh project tech kamu, nunjukin karya nyatanya, dan cari orang yang mau bantu ngembangin. Dari yang masih ide sampai yang sudah live.",
     "A public place to put your tech project, show the real work behind it, and find people who want to help it grow. From a raw idea to something already live.",
   ],

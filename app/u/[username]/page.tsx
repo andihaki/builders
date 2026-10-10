@@ -46,19 +46,19 @@ export async function generateStaticParams(): Promise<{ username: string }[]> {
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const [{ username }, locale] = await Promise.all([params, currentLocale()]);
   const person = await getPerson(username);
-  if (!person) return { title: tx(locale, "Orang tidak ditemukan — Ahsan Project", "Person not found — Ahsan Project") };
+  if (!person) return { title: tx(locale, "Orang tidak ditemukan — Builders", "Person not found — Builders") };
 
   const description =
-    person.headline || tx(locale, `Hal yang sedang dibangun dan dibantu ${person.name} di Ahsan Project.`, `What ${person.name} is building and contributing to on Ahsan Project.`);
+    person.headline || tx(locale, `Hal yang sedang dibangun dan dibantu ${person.name} di Builders.`, `What ${person.name} is building and contributing to on Builders.`);
 
   return {
-    title: `${person.name} — Ahsan Project`,
+    title: `${person.name} — Builders`,
     description,
     alternates: { canonical: `/u/${person.username}` },
     // The card image comes from opengraph-image.tsx beside this file.
     openGraph: {
       type: "profile",
-      title: `${person.name} — Ahsan Project`,
+      title: `${person.name} — Builders`,
       description,
       url: `/u/${person.username}`,
     },

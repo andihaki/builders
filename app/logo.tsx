@@ -1,4 +1,4 @@
-/** Ahsan Project mark used in the navigation and footer. */
+/** Builders mark used in the navigation and footer. */
 export function Logo({ className }: { className?: string }) {
   return (
     <svg

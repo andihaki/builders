@@ -21,8 +21,8 @@ export const instant = false;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Kata sandi baru — Ahsan Project", "New password — Ahsan Project"),
-    description: tx(locale, "Buat kata sandi baru untuk akun Ahsan Project.", "Set a new password for your Ahsan Project account."),
+    title: tx(locale, "Kata sandi baru — Builders", "New password — Builders"),
+    description: tx(locale, "Buat kata sandi baru untuk akun Builders.", "Set a new password for your Builders account."),
     robots: { index: false },
   };
 }

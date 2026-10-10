@@ -39,7 +39,7 @@ import { tx, type Locale } from "../lib/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
-  const title = tx(locale, "Jelajahi — Ahsan Project", "Explore — Ahsan Project");
+  const title = tx(locale, "Jelajahi — Builders", "Explore — Builders");
   const description = tx(locale, "Jelajahi proyek berdasarkan kategori, tahap, dan peran, lalu temukan tempat terbaik untuk berkontribusi.", "Explore projects by category, stage, and role, then find the best place to contribute.");
   return { title, description, alternates: { canonical: "/explore" }, openGraph: shareCard({ title, description, url: "/explore" }) };
 }

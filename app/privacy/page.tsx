@@ -7,8 +7,8 @@ import { tx } from "../lib/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
-  const title = tx(locale, "Kebijakan Privasi — Ahsan Project", "Privacy Policy — Ahsan Project");
-  const description = tx(locale, "Data yang dikumpulkan Ahsan Project, informasi yang tampil secara publik, serta cara data digunakan dan dilindungi.", "What Ahsan Project collects, what's public, and how your data is used and protected.");
+  const title = tx(locale, "Kebijakan Privasi — Builders", "Privacy Policy — Builders");
+  const description = tx(locale, "Data yang dikumpulkan Builders, informasi yang tampil secara publik, serta cara data digunakan dan dilindungi.", "What Builders collects, what's public, and how your data is used and protected.");
   return {
     title,
     description,
@@ -28,7 +28,7 @@ export default async function PrivacyPage() {
         <p className="eyebrow"><span /> {tx(locale, "Kebijakan Privasi", "Privacy Policy")}</p>
         <h1>{tx(locale, "Datamu, dan siapa yang dapat melihatnya.", "Your data, and who gets to see it.")}</h1>
         <p className="lede">
-          {tx(locale, "Ahsan Project adalah papan kolaborasi sekaligus portofolio. Karena visibilitas karya merupakan inti layanan ini, kami menjelaskan secara langsung apa yang bersifat publik, apa yang tetap privat, dan ke mana datamu dikirim.", "Ahsan Project is both a collaboration board and a portfolio. Because making work visible is central to the service, this page plainly explains what is public, what stays private, and where your data goes.")}
+          {tx(locale, "Builders adalah papan kolaborasi sekaligus portofolio. Karena visibilitas karya merupakan inti layanan ini, kami menjelaskan secara langsung apa yang bersifat publik, apa yang tetap privat, dan ke mana datamu dikirim.", "Builders is both a collaboration board and a portfolio. Because making work visible is central to the service, this page plainly explains what is public, what stays private, and where your data goes.")}
         </p>
 
         <h2>{tx(locale, "1. Data yang kami kumpulkan", "1. What we collect")}</h2>
@@ -105,7 +105,7 @@ export default async function PrivacyPage() {
         <p>{tx(locale, "Situs ini tidak ditujukan untuk anak di bawah 13 tahun dan kami tidak dengan sengaja mengumpulkan data mereka.", "This site is not directed at children under 13, and we do not knowingly collect their data.")}</p>
 
         <h2>{tx(locale, "8. Perubahan kebijakan", "8. Changes to this policy")}</h2>
-        <p>{tx(locale, "Ahsan Project masih aktif dikembangkan, sehingga kebijakan ini dapat berubah mengikuti fitur. Tanggal di bawah menunjukkan versi terbaru.", "Ahsan Project is under active development, so this policy may change with its features. The date below reflects the latest version.")}</p>
+        <p>{tx(locale, "Builders masih aktif dikembangkan, sehingga kebijakan ini dapat berubah mengikuti fitur. Tanggal di bawah menunjukkan versi terbaru.", "Builders is under active development, so this policy may change with its features. The date below reflects the latest version.")}</p>
 
         <p className="muted" style={{ marginTop: 40 }}>
           {tx(locale, "Terakhir diperbarui: 29 Agustus 2026.", "Last updated: August 29, 2026.")}

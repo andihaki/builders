@@ -1,4 +1,4 @@
-# Rencana MVP — Ahsan Project
+# Rencana MVP — Builders
 
 > Dokumen kerja: apa yang dikirim untuk MVP, kenapa, dan bagaimana urutannya.
 > Ditulis 2026-08-22 dari hasil analisa codebase di branch

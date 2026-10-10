@@ -1639,7 +1639,7 @@ function seedSummaries(): ProjectSummary[] {
       owner: {
         id: project.ownerId,
         username: owner?.username ?? "ahsan",
-        name: owner?.name ?? "Ahsan Project",
+        name: owner?.name ?? "Builders",
       },
       nowText: project.now,
       nowUpdatedAt: project.nowUpdatedAt || null,

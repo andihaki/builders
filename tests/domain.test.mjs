@@ -4,5 +4,5 @@ import test from "node:test";
 import { siteUrl } from "../app/content.ts";
 
 test("metadata uses the public custom domain", () => {
-  assert.equal(siteUrl, "https://ahsanproject.id");
+  assert.equal(siteUrl, "https://builders.swegrowth.id");
 });

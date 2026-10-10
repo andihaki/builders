@@ -21,7 +21,7 @@ export const instant = false;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Tambahkan proyekmu — Ahsan Project", "Add your project — Ahsan Project"),
+    title: tx(locale, "Tambahkan proyekmu — Builders", "Add your project — Builders"),
     description: tx(locale, "Mulai dari tautan yang sudah ada, atau tulis deskripsi singkat jika proyekmu masih berupa ide.", "Start from an existing link, or write a short description if your project is still an idea."),
     alternates: { canonical: "/new" },
   };
