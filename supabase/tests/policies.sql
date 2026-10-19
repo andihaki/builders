@@ -795,6 +795,91 @@ select checks.act_as('22222222-2222-4222-8222-222222222222');
 delete from public.oss_contributions where user_id = '22222222-2222-4222-8222-222222222222';
 select checks.equal((select count(*)::int from public.oss_contributions), 0, 'anggota menghapus catatannya sendiri');
 
+-- -------------------------------------------------- oss_repos / site_admins --
+-- Members submit repos as pending under their own name; only a site admin
+-- approves, edits, or removes. Guests see approved rows alone.
+
+select checks.act_as('22222222-2222-4222-8222-222222222222');
+
+select checks.equal(public.is_site_admin(), false, 'anggota biasa bukan admin');
+
+select checks.allowed($$
+  insert into public.oss_repos (repo, why, submitted_by)
+  values ('acme/tool', 'Maintainer-nya responsif.', '22222222-2222-4222-8222-222222222222')
+$$, 'anggota mengusulkan repo');
+
+select checks.denied($$
+  insert into public.oss_repos (repo, why, submitted_by, status)
+  values ('acme/self-approved', 'Langsung tampil tanpa review.', '22222222-2222-4222-8222-222222222222', 'approved')
+$$, 'anggota menyetujui usulannya sendiri saat mengirim');
+
+select checks.denied($$
+  insert into public.oss_repos (repo, why, submitted_by)
+  values ('acme/other', 'Atas nama orang lain.', '11111111-1111-4111-8111-111111111111')
+$$, 'mengusulkan atas nama orang lain');
+
+select checks.denied($$
+  insert into public.oss_repos (repo, why, submitted_by)
+  values ('acme/short', 'bagus', '22222222-2222-4222-8222-222222222222')
+$$, 'alasan terlalu pendek');
+
+select checks.denied($$
+  insert into public.oss_repos (repo, why, submitted_by, reasons)
+  values ('acme/odd', 'Alasan yang cukup panjang.', '22222222-2222-4222-8222-222222222222', array['ours'])
+$$, 'tanda di luar daftar');
+
+-- RLS hides the row from an UPDATE rather than raising, so check the result.
+update public.oss_repos set status = 'approved' where repo = 'acme/tool';
+select checks.equal((select status from public.oss_repos where repo = 'acme/tool'), 'pending',
+                    'anggota tidak bisa menyetujui usulannya sendiri');
+
+select checks.act_as('33333333-3333-4333-8333-333333333333');
+select checks.equal((select count(*)::int from public.oss_repos where repo = 'acme/tool'), 0,
+                    'usulan pending tidak terlihat oleh anggota lain');
+select checks.equal((select count(*)::int from public.site_admins), 0, 'daftar admin tidak terbaca anggota lain');
+
+select checks.act_as_guest();
+select checks.equal((select count(*)::int from public.oss_repos), 1, 'tamu hanya melihat repo yang disetujui');
+
+-- An admin is made by hand, exactly as the migration's comment describes.
+reset role;
+insert into public.site_admins (user_id) values ('11111111-1111-4111-8111-111111111111');
+
+select checks.act_as('11111111-1111-4111-8111-111111111111');
+select checks.equal(public.is_site_admin(), true, 'admin dikenali');
+select checks.equal((select count(*)::int from public.oss_repos), 2, 'admin melihat antrean');
+
+select checks.allowed($$
+  update public.oss_repos
+  set status = 'approved', reviewed_by = '11111111-1111-4111-8111-111111111111', reviewed_at = now()
+  where repo = 'acme/tool'
+$$, 'admin menyetujui usulan');
+
+select checks.allowed($$
+  insert into public.oss_repos (repo, why, status, submitted_by)
+  values ('acme/direct', 'Ditambahkan langsung oleh admin.', 'approved', '11111111-1111-4111-8111-111111111111')
+$$, 'admin menambah repo langsung');
+
+select checks.act_as_guest();
+select checks.equal((select count(*)::int from public.oss_repos), 3, 'repo yang disetujui muncul untuk tamu');
+
+select checks.act_as('22222222-2222-4222-8222-222222222222');
+delete from public.oss_repos where repo = 'acme/tool';
+select checks.equal((select count(*)::int from public.oss_repos where repo = 'acme/tool'), 1,
+                    'pengusul tidak bisa menghapus repo yang sudah disetujui');
+
+select checks.allowed($$
+  insert into public.oss_repos (repo, why, submitted_by)
+  values ('acme/withdrawn', 'Nanti ditarik kembali.', '22222222-2222-4222-8222-222222222222')
+$$, 'anggota mengusulkan lagi');
+delete from public.oss_repos where repo = 'acme/withdrawn';
+select checks.equal((select count(*)::int from public.oss_repos where repo = 'acme/withdrawn'), 0,
+                    'pengusul menarik usulan yang masih pending');
+
+select checks.act_as('11111111-1111-4111-8111-111111111111');
+delete from public.oss_repos where repo = 'acme/direct';
+select checks.equal((select count(*)::int from public.oss_repos where repo = 'acme/direct'), 0, 'admin menghapus repo');
+
 reset role;
 select checks.equal((select count(*)::int from public.feedback where author_id is null), 1,
                     'masukan tamu tersimpan tanpa penulis');

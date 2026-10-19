@@ -7,12 +7,14 @@ A directory of projects you can contribute to. One list, one search box, and
 a button on every row that opens where contributing starts.
 
 The list holds three kinds of project: open source repositories we maintain,
-open source repositories we recommend (each with the reason it is listed), and
-products builders have listed here that are asking for help — either by taking
-pull requests on GitHub or by naming a role they need.
+open source repositories one of us recommends (each with the reason, in the
+recommender's own words, and their name), and products builders have listed
+here that are asking for help — either by taking pull requests on GitHub or by
+naming a role they need (designer, PM, researcher, writer…).
 
-The curated repositories live in `app/lib/open-source.ts`. Adding one — with
-its reason — is a pull request, and a good first one.
+Repositories reach the directory through `/recommend`: any member puts one
+forward, and a site admin approves it on `/admin`. Products come in through
+`/new`, as before.
 
 Show what you are making — an idea, a half-built thing, or something people
 already use. Say what it is working on right now, write down its journey as it
@@ -83,10 +85,13 @@ and everything that writes will say so rather than failing quietly.
     pick the kind of collaboration they are looking for, and
     `20260829130000_link_first_projects.sql`, which drops the brief's length
     floors and adds `highlight`, so a project can arrive as a link and be
-    written up afterwards, and `20261020000000_oss_contributions.sql`, the
+    written up afterwards, `20261020000000_oss_contributions.sql`, the
     open source repos each member lists on their profile — the source of the
     directory's "a friend has contributed" and "maintainer in our group"
-    badges
+    badges — and `20261021000000_oss_catalogue.sql`, the open source
+    catalogue (`oss_repos`) and the site admins who approve it
+    (`site_admins`). Make yourself an admin afterwards, in the SQL editor:
+    `insert into public.site_admins (user_id) select id from public.profiles where username = '<you>';`
 3. Copy the project URL and the **anon** key from Project Settings → API into
    `.env.local`. Never put the `service_role` key in this app; it bypasses every
    policy.
@@ -162,6 +167,8 @@ match it.
 
 | Route | What it is |
 | --- | --- |
+| `/recommend` | Suggest an open source repo — yours or one you vouch for — with your reason. Waits for an admin; your own suggestions and their status are listed below the form |
+| `/admin` | Site admins only (404 for anyone else): approve or reject suggestions, edit or remove listed repos, add one directly |
 | `/` | The directory: facets on the left — how to contribute (`?track=role`; code on GitHub by default), signals (`?badge=friend-contributed\|in-our-group\|indonesian`), source (`?source=internal\|recommended\|product`), language or role (`?facet=`) — and a table of projects on the right, with search (`?q=`) |
 | `/explore` | The older project board, narrowed by level, kind, topic, role, search. No longer in the menu |
 | `/projects/<slug>` | One project: the story, what it is doing now, the help it wants, its journey |
@@ -186,11 +193,14 @@ match it.
   rather than a constraint error.
 - `app/lib/next-steps.ts` — the steps `/get-started` lists. Named things with a
   link at each, never a percentage: a profile is not a form to fill to 100%.
-- `app/lib/open-source.ts` — the curated repositories, why each is listed,
-  and how starter issues are linked. `app/lib/open-source-live.ts` adds
-  GitHub's stars and last push, cached for hours; set `GITHUB_TOKEN` (any
-  read-only token) to lift GitHub's anonymous rate limit. Without it a refused
-  request costs that card its numbers and nothing else.
+- `app/lib/open-source.ts` — the catalogue's types, its reason tags, and
+  what a suggestion must carry (`validateRepoSubmission`, the same ceilings as
+  the `oss_repos` check constraints). The rows themselves are in the database;
+  the only built-in one, for running without Supabase, is this repository.
+  `app/lib/open-source-live.ts` adds GitHub's stars, language, and
+  description, cached for hours per repo; set `GITHUB_TOKEN` (any read-only
+  token) to lift GitHub's anonymous rate limit. Without it a refused request
+  costs that card its numbers and nothing else.
 - `app/lib/oss.ts` — members' open source records and the badges built from
   them. A member lists the repos they contributed to or maintain (profile
   editor, or step 2 of onboarding); every listed repo in the directory then
@@ -200,9 +210,8 @@ match it.
   its "friends have been here".
 - `app/lib/badges.ts` — badge kinds and the hand-set ones, merged per kind
   with the member-derived ones: for what no member can say for themselves
-  ("maintainers are Indonesian") or somebody not signed up yet. A repo's go on
-  its entry in `app/lib/open-source.ts`; a product's in `PRODUCT_BADGES`, by
-  slug.
+  ("maintainers are Indonesian", ticked on the suggestion form). A product's
+  go in `PRODUCT_BADGES`, by slug.
 - `app/lib/directory.ts` — splits the directory by how you contribute: code
   through a pull request on GitHub (our repos, recommended repos, products
   open to PRs), or another role on a builders' product. A product doing both

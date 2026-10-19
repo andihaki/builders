@@ -15,10 +15,10 @@ import { isGitHubHandle } from "./oss";
  *   - members' own records — the repos they list on their profile as
  *     contributor or maintainer (`app/lib/oss.ts`), which is where most
  *     badges should come from;
- *   - hand-set ones, for what no member can say for themselves (the
- *     maintainers are Indonesian) or for somebody not signed up yet:
- *     repositories carry theirs in `app/lib/open-source.ts`, on `badges`, and
- *     builders' products in `PRODUCT_BADGES` below, by slug.
+ *   - hand-set ones, for what no member can say for themselves: a catalogue
+ *     repo's "maintainers are Indonesian" is ticked on its suggestion form
+ *     (`oss_repos.indonesian`), and builders' products carry theirs in
+ *     `PRODUCT_BADGES` below, by slug.
  */
 export const BADGE_KINDS = ["friend-contributed", "in-our-group", "indonesian"] as const;
 export type BadgeKind = (typeof BADGE_KINDS)[number];

@@ -2,7 +2,27 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { badgeCounts, directoryFacets, filterDirectory, productEntries, repoEntry } from "../app/lib/directory.ts";
-import { OPEN_SOURCE_REPOS } from "../app/lib/open-source.ts";
+// Fixtures, not the catalogue: the catalogue lives in the database now.
+const repo = (over = {}) => ({
+  id: 1,
+  owner: "acme",
+  repo: "tool",
+  list: "recommended",
+  reasons: ["beginner-friendly"],
+  why: "Maintainer-nya responsif.",
+  summary: "A tool.",
+  indonesian: false,
+  starterLabel: "good first issue",
+  status: "approved",
+  submittedBy: { username: "ana", name: "Ana" },
+  createdAt: "2026-10-21T00:00:00Z",
+  ...over,
+});
+const OPEN_SOURCE_REPOS = [
+  repo({ id: 1, owner: "zikrulihsan", repo: "builders", list: "internal", indonesian: false }),
+  repo({ id: 2, owner: "vercel", repo: "next.js", reasons: ["our-stack"], stats: { stars: 9, description: "", openIssues: 0, language: "JavaScript", pushedAt: "", archived: false } }),
+  repo({ id: 3, owner: "gojek", repo: "heimdall", indonesian: true, summary: "Bahasa Go HTTP client.", stats: { stars: 1, description: "", openIssues: 0, language: "Go", pushedAt: "", archived: false } }),
+];
 
 const describe = (project) => project.tagline;
 const roleName = (role) => role.toUpperCase();
@@ -25,14 +45,15 @@ function product(overrides = {}) {
 
 test("a repo is on the GitHub path and goes straight to its starter issues", () => {
   const repo = OPEN_SOURCE_REPOS.find((entry) => entry.list === "internal");
-  const entry = repoEntry({ ...repo, stats: { stars: 12, openIssues: 1, language: "Rust", pushedAt: "", archived: false } }, "en");
+  const entry = repoEntry({ ...repo, stats: { stars: 12, description: "", openIssues: 1, language: "Rust", pushedAt: "", archived: false } }, "en");
   assert.equal(entry.track, "github");
   assert.equal(entry.source, "internal");
   assert.equal(entry.language, "Rust");
   assert.equal(entry.stars, 12);
   assert.ok(entry.external);
   assert.match(entry.actionHref, /\/issues\?q=/);
-  assert.ok(!entry.labels.includes("Ours"), "every internal entry is ours; the source label already says so");
+  assert.equal(entry.why, "Maintainer-nya responsif.");
+  assert.deepEqual(entry.submittedBy, { username: "ana", name: "Ana" });
 
   assert.equal(repoEntry(repo, "en").stars, null);
 });
@@ -112,14 +133,15 @@ test("chips are the languages on the code path and the roles on the role path", 
   assert.ok(languages.includes("Go") && !languages.includes("DESIGN"));
 });
 
-test("badges are carried from the catalogue, filtered on, and counted per path", () => {
+test("badges come from the catalogue row and members' records, are filtered on, and counted per path", () => {
   const repos = [
-    { ...OPEN_SOURCE_REPOS[0], repo: "a", badges: [{ kind: "indonesian" }] },
-    { ...OPEN_SOURCE_REPOS[0], repo: "b", badges: [{ kind: "friend-contributed", people: ["ana"] }, { kind: "indonesian" }] },
-    { ...OPEN_SOURCE_REPOS[0], repo: "c", badges: [] },
+    repo({ id: 11, repo: "a", indonesian: true }),
+    repo({ id: 12, repo: "b", indonesian: true }),
+    repo({ id: 13, repo: "c" }),
   ];
-  const entries = repos.map((repo) => repoEntry(repo, "en"));
-  assert.deepEqual(entries[1].badges, repos[1].badges);
+  const members = [{ username: "ana", name: "Ana", handle: "ana", contributions: [{ repo: "acme/b", relation: "contributor" }] }];
+  const entries = repos.map((entry) => repoEntry(entry, "en", members));
+  assert.deepEqual(entries[0].badges, [{ kind: "indonesian" }]);
 
   const none = { source: "", badge: "", facet: "", q: "" };
   assert.deepEqual(filterDirectory(entries, { ...none, track: "github", badge: "indonesian" }).map((e) => e.name), ["a", "b"]);
@@ -147,8 +169,8 @@ test("a product's filled seats become its 'friends have been here' badge", () =>
 });
 
 test("members' records reach a repo's row through the directory", () => {
-  const repo = OPEN_SOURCE_REPOS.find((entry) => entry.repo === "next.js");
+  const next = OPEN_SOURCE_REPOS.find((entry) => entry.repo === "next.js");
   const members = [{ username: "ana", name: "Ana", handle: "ana", contributions: [{ repo: "vercel/next.js", relation: "contributor" }] }];
-  const badge = repoEntry(repo, "en", members).badges.find((entry) => entry.kind === "friend-contributed");
+  const badge = repoEntry(next, "en", members).badges.find((entry) => entry.kind === "friend-contributed");
   assert.deepEqual(badge, { kind: "friend-contributed", people: ["ana"], count: 1, profiles: ["ana"] });
 });

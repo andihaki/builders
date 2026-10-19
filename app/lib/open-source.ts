@@ -1,220 +1,102 @@
 import type { Badge } from "./badges";
 import { tx, type Locale } from "./locale";
+import { parseRepoRef } from "./oss";
 
 /**
- * The open source repositories this site points people at.
+ * The open source repositories the directory lists.
  *
- * Curated by hand rather than collected from a form, and kept in the
- * repository on purpose: adding a repo is a pull request, which is exactly the
- * first contribution this list exists to encourage. Each entry says *why* it is
- * here — "it is popular" is not a reason anybody can act on, "the maintainers
- * are Indonesian and answer in Bahasa" is.
+ * They live in the `oss_repos` table (20261021000000_oss_catalogue.sql), not
+ * in code: any member can put a repository forward from /recommend — one of
+ * their own, or one they vouch for — and a site admin approves it on /admin
+ * before the directory shows it. Every listing therefore says who put it
+ * forward and why, in their own words; nothing here is made up to fill space.
  *
  * Two lists:
  *
  *   - `internal` — repositories we maintain. Somebody opening a PR here gets a
  *     reviewer who knows them, which is the easiest first PR there is.
- *   - `recommended` — somebody else's repositories that we vouch for, each with
- *     the reasons that earned it the place.
+ *   - `recommended` — somebody else's repositories that one of us vouches for.
  *
- * The directory on the home page (`app/lib/directory.ts`) lists these first,
- * ours before the recommendations. Live numbers (stars, language) come from GitHub through
- * `app/lib/open-source-live.ts`; everything here is what the page falls back
- * to when GitHub cannot be reached, so the listing never depends on it.
+ * Pure: types, labels, and the rules a submission must meet, shared by the
+ * form, the server action, and the tests.
  */
 
 export const REPO_LISTS = ["internal", "recommended"] as const;
 export type RepoList = (typeof REPO_LISTS)[number];
 
 /**
- * Why a repository earned its place. Deliberately a short closed set so the
- * listing can be filtered by it; the entry's `why` says the rest in words.
+ * Why a repository earned its place, from a short closed set so the directory
+ * can show it as a tag. The submission's `why` says the rest in words. Kept in
+ * step with the `oss_repos_reasons` check constraint.
  */
-export const REPO_REASONS = [
-  "ours",
-  "our-stack",
-  "beginner-friendly",
-  "local-impact",
-] as const;
+export const REPO_REASONS = ["our-stack", "beginner-friendly", "local-impact"] as const;
 export type RepoReason = (typeof REPO_REASONS)[number];
 
-export type LocalizedText = { id: string; en: string };
+export const REPO_STATUSES = ["pending", "approved", "rejected"] as const;
+export type RepoStatus = (typeof REPO_STATUSES)[number];
+
+/** The ceilings the table's check constraints also enforce. */
+export const REPO_LIMITS = { whyMin: 10, why: 280, summary: 160, starterLabel: 50 } as const;
 
 export type OpenSourceRepo = {
+  id: number;
   owner: string;
   repo: string;
   list: RepoList;
   reasons: RepoReason[];
-  /**
-   * Trust signals about the people around it, set by hand — a friend has
-   * contributed, a maintainer is in our group, the maintainers are
-   * Indonesian. See `app/lib/badges.ts`.
-   */
-  badges: Badge[];
-  /** What the project is, in one line. */
-  summary: LocalizedText;
-  /** Why it is on this list, in our own words. */
-  why: LocalizedText;
-  /** Main language, used until GitHub says otherwise. */
-  language: string;
-  topics: string[];
+  /** Why it is listed, in the submitter's words. */
+  why: string;
+  /** What it is, in one line. Empty falls back to GitHub's description. */
+  summary: string;
+  /** Hand-set: its maintainers are Indonesian. */
+  indonesian: boolean;
   /** The label its maintainers use for starter issues. */
   starterLabel: string;
+  status: RepoStatus;
+  /** Who put it forward; null for the seeded row or a deleted account. */
+  submittedBy: { username: string; name: string } | null;
+  createdAt: string;
 };
 
-const REASON_LABELS: Record<RepoReason, LocalizedText> = {
-  ours: { id: "Milik kami", en: "Ours" },
+/**
+ * What the directory falls back to with no database configured, so local
+ * development still has a row to look at: this site's own repository, which
+ * is a fact rather than a recommendation.
+ */
+export const SEED_REPOS: OpenSourceRepo[] = [
+  {
+    id: 0,
+    owner: "zikrulihsan",
+    repo: "builders",
+    list: "internal",
+    reasons: ["beginner-friendly"],
+    why: "Repo milik kita sendiri. Reviewer-nya teman sendiri, jadi PR pertamamu dibaca orang yang kenal kamu.",
+    summary: "Direktori project yang bisa dikontribusikan. Next.js + Supabase, MIT.",
+    indonesian: false,
+    starterLabel: "good first issue",
+    status: "approved",
+    submittedBy: null,
+    createdAt: "2026-10-21T00:00:00Z",
+  },
+];
+
+const REASON_LABELS: Record<RepoReason, { id: string; en: string }> = {
   "our-stack": { id: "Stack yang kami pakai", en: "Part of our stack" },
   "beginner-friendly": { id: "Ramah pemula", en: "Beginner friendly" },
   "local-impact": { id: "Berdampak lokal", en: "Local impact" },
 };
 
-export const OPEN_SOURCE_REPOS: OpenSourceRepo[] = [
-  {
-    owner: "zikrulihsan",
-    repo: "builders",
-    list: "internal",
-    reasons: ["ours", "beginner-friendly"],
-    badges: [{ kind: "in-our-group", people: ["zikrulihsan"] }],
-    summary: {
-      id: "Situs yang sedang kamu buka: direktori project yang bisa dikontribusikan.",
-      en: "The site you are looking at: a directory of projects you can contribute to.",
-    },
-    why: {
-      id: "Kami yang me-review sendiri, jadi PR pertamamu dibaca orang yang kenal kamu. Next.js + Supabase, MIT.",
-      en: "We review it ourselves, so your first PR is read by people who know you. Next.js + Supabase, MIT.",
-    },
-    language: "TypeScript",
-    topics: ["nextjs", "supabase", "community"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "firstcontributions",
-    repo: "first-contributions",
-    list: "recommended",
-    reasons: ["beginner-friendly"],
-    badges: [],
-    summary: {
-      id: "Latihan alur fork → branch → pull request dari nol, dengan panduan berbahasa Indonesia.",
-      en: "Practise the fork → branch → pull request flow from zero, with a guide in Bahasa Indonesia.",
-    },
-    why: {
-      id: "Belum pernah bikin PR sama sekali? Mulai di sini dulu — 15 menit, tanpa takut salah.",
-      en: "Never opened a PR at all? Start here — fifteen minutes, nothing to break.",
-    },
-    language: "Markdown",
-    topics: ["tutorial", "git", "first-pr"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "vercel",
-    repo: "next.js",
-    list: "recommended",
-    reasons: ["our-stack"],
-    badges: [],
-    summary: {
-      id: "Framework React yang menjalankan situs ini.",
-      en: "The React framework this site runs on.",
-    },
-    why: {
-      id: "Kami memakainya tiap hari. Perbaikan dokumentasi dan contoh adalah pintu masuk yang realistis.",
-      en: "We use it every day. Docs fixes and examples are a realistic way in.",
-    },
-    language: "JavaScript",
-    topics: ["react", "framework", "web"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "supabase",
-    repo: "supabase",
-    list: "recommended",
-    reasons: ["our-stack"],
-    badges: [],
-    summary: {
-      id: "Database Postgres, auth, dan storage yang dipakai Builders.",
-      en: "The Postgres database, auth, and storage Builders runs on.",
-    },
-    why: {
-      id: "Stack kami sendiri. Banyak isu dokumentasi dan UI dashboard yang cocok untuk kontributor baru.",
-      en: "Our own stack. Plenty of docs and dashboard UI issues suit new contributors.",
-    },
-    language: "TypeScript",
-    topics: ["postgres", "backend", "auth"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "sastrawi",
-    repo: "sastrawi",
-    list: "recommended",
-    reasons: ["local-impact"],
-    badges: [{ kind: "indonesian" }],
-    summary: {
-      id: "Library PHP untuk stemming bahasa Indonesia.",
-      en: "A PHP library for stemming Bahasa Indonesia.",
-    },
-    why: {
-      id: "Dibuat developer Indonesia untuk bahasa kita sendiri — kontribusi yang manfaatnya terasa dekat.",
-      en: "Built by Indonesian developers for our own language — a contribution whose use is close to home.",
-    },
-    language: "PHP",
-    topics: ["nlp", "bahasa-indonesia", "stemmer"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "IndoNLP",
-    repo: "indonlu",
-    list: "recommended",
-    reasons: ["local-impact"],
-    badges: [{ kind: "indonesian" }],
-    summary: {
-      id: "Benchmark dan model untuk pemahaman bahasa Indonesia.",
-      en: "Benchmarks and models for understanding Bahasa Indonesia.",
-    },
-    why: {
-      id: "Riset NLP dari peneliti Indonesia. Cocok kalau kamu di ML/data dan mau kontribusi di luar web.",
-      en: "NLP research by Indonesian researchers. A fit if you work in ML or data and want something beyond the web.",
-    },
-    language: "Python",
-    topics: ["nlp", "machine-learning", "bahasa-indonesia"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "gojek",
-    repo: "heimdall",
-    list: "recommended",
-    reasons: ["beginner-friendly"],
-    badges: [{ kind: "indonesian" }],
-    summary: {
-      id: "HTTP client Go dengan retry dan circuit breaker, dari tim engineering Gojek.",
-      en: "A Go HTTP client with retries and circuit breaking, from Gojek's engineering team.",
-    },
-    why: {
-      id: "Open source dari perusahaan teknologi Indonesia. Codebase kecil, mudah dibaca dalam sehari.",
-      en: "Open source from an Indonesian tech company. A small codebase you can read in a day.",
-    },
-    language: "Go",
-    topics: ["go", "http", "resilience"],
-    starterLabel: "good first issue",
-  },
-  {
-    owner: "excalidraw",
-    repo: "excalidraw",
-    list: "recommended",
-    reasons: ["beginner-friendly"],
-    badges: [],
-    summary: {
-      id: "Papan gambar kolaboratif bergaya sketsa tangan.",
-      en: "A collaborative whiteboard with a hand-drawn feel.",
-    },
-    why: {
-      id: "Maintainer aktif me-review, isu dilabeli rapi, dan hasil kerjamu langsung terlihat di layar.",
-      en: "Maintainers review actively, issues are well labelled, and your work shows up on screen right away.",
-    },
-    language: "TypeScript",
-    topics: ["react", "canvas", "whiteboard"],
-    starterLabel: "good first issue",
-  },
-];
+export function isRepoList(value: string): value is RepoList {
+  return (REPO_LISTS as readonly string[]).includes(value);
+}
+
+export function isRepoReason(value: string): value is RepoReason {
+  return (REPO_REASONS as readonly string[]).includes(value);
+}
+
+export function isRepoStatus(value: string): value is RepoStatus {
+  return (REPO_STATUSES as readonly string[]).includes(value);
+}
 
 export function repoSlug(repo: Pick<OpenSourceRepo, "owner" | "repo">): string {
   return `${repo.owner}/${repo.repo}`;
@@ -241,6 +123,121 @@ export function reasonLabel(reason: RepoReason, locale: Locale): string {
   return tx(locale, label.id, label.en);
 }
 
-export function localized(text: LocalizedText, locale: Locale): string {
-  return tx(locale, text.id, text.en);
+export function listLabel(list: RepoList, locale: Locale): string {
+  return list === "internal"
+    ? tx(locale, "Open source kami", "Our open source")
+    : tx(locale, "Rekomendasi", "Recommended");
+}
+
+export function statusLabel(status: RepoStatus, locale: Locale): string {
+  if (status === "approved") return tx(locale, "Disetujui", "Approved");
+  if (status === "rejected") return tx(locale, "Ditolak", "Rejected");
+  return tx(locale, "Menunggu review", "Awaiting review");
+}
+
+/** The hand-set badges a catalogue row carries. */
+export function repoBadges(repo: Pick<OpenSourceRepo, "indonesian">): Badge[] {
+  return repo.indonesian ? [{ kind: "indonesian" }] : [];
+}
+
+/** A database row, as the rest of the app reads it. */
+export function toOpenSourceRepo(row: {
+  id: number;
+  repo: string;
+  list: string;
+  reasons: string[] | null;
+  why: string;
+  summary: string;
+  indonesian: boolean;
+  starter_label: string;
+  status: string;
+  created_at: string;
+  submitter?: { username: string; name: string } | null;
+}): OpenSourceRepo | null {
+  const [owner, name] = row.repo.split("/");
+  if (!owner || !name || !isRepoList(row.list) || !isRepoStatus(row.status)) return null;
+  return {
+    id: row.id,
+    owner,
+    repo: name,
+    list: row.list,
+    reasons: (row.reasons ?? []).filter(isRepoReason),
+    why: row.why,
+    summary: row.summary,
+    indonesian: row.indonesian,
+    starterLabel: row.starter_label,
+    status: row.status,
+    submittedBy: row.submitter ?? null,
+    createdAt: row.created_at,
+  };
+}
+
+export type RepoSubmission = {
+  repo: string;
+  list: RepoList;
+  reasons: RepoReason[];
+  why: string;
+  summary: string;
+  indonesian: boolean;
+  starterLabel: string;
+};
+
+export type RepoSubmissionInput = {
+  repo: string;
+  list: string;
+  reasons: string[];
+  why: string;
+  summary: string;
+  indonesian: boolean;
+  starterLabel: string;
+};
+
+export type RepoSubmissionResult =
+  | { ok: true; value: RepoSubmission }
+  | { ok: false; errors: Partial<Record<"repo" | "list" | "why" | "summary" | "starterLabel", string>> };
+
+/**
+ * A submission as it may be written, or a sentence per field saying why not.
+ *
+ * The same ceilings as the table's check constraints, so a mistake comes back
+ * as words rather than a constraint error.
+ */
+export function validateRepoSubmission(input: RepoSubmissionInput, locale: Locale = "en"): RepoSubmissionResult {
+  const errors: Partial<Record<"repo" | "list" | "why" | "summary" | "starterLabel", string>> = {};
+  const repo = parseRepoRef(input.repo);
+  const why = input.why.trim().replace(/\s+/g, " ");
+  const summary = input.summary.trim().replace(/\s+/g, " ");
+  const starterLabel = input.starterLabel.trim() || "good first issue";
+
+  if (!repo) {
+    errors.repo = tx(locale, "Tulis sebagai owner/repo atau tempel URL GitHub-nya.", "Write it as owner/repo or paste its GitHub URL.");
+  }
+  if (!isRepoList(input.list)) {
+    errors.list = tx(locale, "Pilih: repo milik kita atau rekomendasi.", "Choose: one of ours, or a recommendation.");
+  }
+  if (why.length < REPO_LIMITS.whyMin) {
+    errors.why = tx(locale, "Ceritakan alasannya, minimal satu kalimat pendek.", "Say why, in at least a short sentence.");
+  } else if (why.length > REPO_LIMITS.why) {
+    errors.why = tx(locale, `Maksimal ${REPO_LIMITS.why} karakter.`, `At most ${REPO_LIMITS.why} characters.`);
+  }
+  if (summary.length > REPO_LIMITS.summary) {
+    errors.summary = tx(locale, `Maksimal ${REPO_LIMITS.summary} karakter.`, `At most ${REPO_LIMITS.summary} characters.`);
+  }
+  if (starterLabel.length > REPO_LIMITS.starterLabel) {
+    errors.starterLabel = tx(locale, `Maksimal ${REPO_LIMITS.starterLabel} karakter.`, `At most ${REPO_LIMITS.starterLabel} characters.`);
+  }
+
+  if (!repo || Object.keys(errors).length > 0) return { ok: false, errors };
+  return {
+    ok: true,
+    value: {
+      repo,
+      list: input.list as RepoList,
+      reasons: [...new Set(input.reasons.filter(isRepoReason))],
+      why,
+      summary,
+      indonesian: input.indonesian,
+      starterLabel,
+    },
+  };
 }

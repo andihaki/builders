@@ -130,6 +130,7 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               )}
             </p>
           </div>
+          <Link className="dx-head-link" href="/recommend">{tx(locale, "+ Usulkan repo", "+ Suggest a repo")}</Link>
         </header>
 
         <Suspense fallback={<DirectorySkeleton />}>
@@ -303,6 +304,17 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
             </div>
           )}
         </div>
+
+        <p className="dx-suggest">
+          {filters.track === "github"
+            ? tx(locale, "Tahu repo yang layak masuk? ", "Know a repo that belongs here? ")
+            : tx(locale, "Punya produk yang butuh bantuan? ", "Have a product that needs a hand? ")}
+          {filters.track === "github" ? (
+            <Link href="/recommend">{tx(locale, "Usulkan repo", "Suggest a repo")}</Link>
+          ) : (
+            <Link href="/new">{tx(locale, "Daftarkan produk dan buka peran", "List it and open a role")}</Link>
+          )}
+        </p>
       </section>
     </div>
   );
@@ -453,7 +465,18 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
             )}
             <span className="dx-owner">{owner}</span>
           </p>
-          <p className="dx-desc">{entry.description}</p>
+          {entry.description ? <p className="dx-desc">{entry.description}</p> : null}
+          {entry.why ? (
+            <p className="dx-why">
+              <span>{tx(locale, "Kenapa:", "Why:")}</span> {entry.why}
+              {entry.submittedBy ? (
+                <>
+                  {" — "}
+                  <Link href={`/u/${entry.submittedBy.username}`}>{entry.submittedBy.name}</Link>
+                </>
+              ) : null}
+            </p>
+          ) : null}
           {entry.badges.length > 0 ? (
             <ul className="dx-badges" aria-label={tx(locale, "Tanda", "Signals")}>
               {entry.badges.map((badge) => <BadgeChip key={badge.kind} badge={badge} locale={locale} />)}

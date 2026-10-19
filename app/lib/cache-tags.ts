@@ -57,4 +57,6 @@ export const tags = {
    * the open source section of each profile are all built from it.
    */
   oss: "oss",
+  /** The approved open source catalogue the directory lists. */
+  catalogue: "catalogue",
 } as const;

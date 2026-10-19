@@ -1,35 +1,42 @@
 import { cacheLife } from "next/cache";
+import { listCatalogue } from "./data";
 import { getGitHubRepositoryStats, type GitHubRepositoryStats } from "./github";
-import { OPEN_SOURCE_REPOS, repoSlug, type OpenSourceRepo } from "./open-source";
+import { repoSlug, type OpenSourceRepo } from "./open-source";
 
 export type LiveRepo = OpenSourceRepo & { stats: GitHubRepositoryStats | null };
 
 /**
- * The curated catalogue with GitHub's current numbers attached.
+ * One repository's numbers from GitHub, cached for hours and shared by every
+ * visitor.
  *
- * Cached for hours and shared by every visitor: unauthenticated, the GitHub
- * API allows sixty requests an hour per address, and a serverless function
- * shares its address with strangers. `GITHUB_TOKEN` (any read-only token) lifts
- * that limit; without it a refused request only costs that card its numbers.
+ * Cached per repository rather than with the catalogue, so approving a repo
+ * on /admin shows it at once while its stars keep their longer life.
+ * Unauthenticated, the GitHub API allows sixty requests an hour per address,
+ * and a serverless function shares its address with strangers; `GITHUB_TOKEN`
+ * (any read-only token) lifts that. A refused request costs that card its
+ * numbers and nothing else.
  */
-export async function listOpenSourceRepos(): Promise<LiveRepo[]> {
+async function repoStats(owner: string, repo: string): Promise<GitHubRepositoryStats | null> {
   "use cache";
   cacheLife("hours");
 
-  const token = process.env.GITHUB_TOKEN ?? "";
-  const stats = await Promise.all(
-    OPEN_SOURCE_REPOS.map((repo) => getGitHubRepositoryStats(repo.owner, repo.repo, fetch, token)),
-  );
-
-  return OPEN_SOURCE_REPOS.map((repo, index) => {
-    const live = stats[index];
-    if (!live) console.warn(`[ahsan] GitHub numbers for ${repoSlug(repo)} were skipped.`);
-    return {
-      ...repo,
-      // GitHub's own answer wins once it has one; the curated value is only
-      // there for when it does not.
-      language: live?.language || repo.language,
-      stats: live,
-    };
-  });
+  const stats = await getGitHubRepositoryStats(owner, repo, fetch, process.env.GITHUB_TOKEN ?? "");
+  if (!stats) console.warn(`[ahsan] GitHub numbers for ${owner}/${repo} were skipped.`);
+  return stats;
 }
+
+/** The approved catalogue with GitHub's current numbers attached. */
+export async function listOpenSourceRepos(): Promise<LiveRepo[]> {
+  const catalogue = await listCatalogue();
+  const stats = await Promise.all(catalogue.map((repo) => repoStats(repo.owner, repo.repo)));
+
+  return catalogue.map((repo, index) => ({
+    ...repo,
+    // The submitter's line wins; GitHub's description fills in when they
+    // left it empty.
+    summary: repo.summary || stats[index]?.description || "",
+    stats: stats[index],
+  }));
+}
+
+export { repoSlug };

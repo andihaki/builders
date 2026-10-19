@@ -4,6 +4,7 @@ import { getPublicSupabase, getSupabase, type Supabase } from "./supabase";
 import { tags } from "./cache-tags";
 import type {
   CommentRow,
+  OssRepoRow,
   EventRow,
   ProfileRow,
   ProjectOverviewRow,
@@ -14,6 +15,7 @@ import type {
 } from "./database.types";
 import { seedEvents, seedProjects, seedUsers } from "./seed";
 import type { Stage } from "./stages";
+import { SEED_REPOS, toOpenSourceRepo, type OpenSourceRepo } from "./open-source";
 import { githubHandle, isOssRelation, type OssContribution, type OssMember, type OssRelation } from "./oss";
 import type { Lane } from "./feed";
 import { COLLABORATION_KINDS, PROJECT_MEMORY_KINDS } from "./activity";
@@ -1842,4 +1844,93 @@ export async function listOssContributionsOf(userId: string): Promise<OssContrib
   cacheTag(tags.oss);
 
   return (await readOssRows(userId)).map(({ repo, relation }) => ({ repo, relation }));
+}
+
+const CATALOGUE_COLUMNS =
+  "id, repo, list, reasons, why, summary, indonesian, starter_label, status, submitted_by, created_at";
+
+/** Rows from `oss_repos`, with who put each one forward. */
+async function toCatalogue(
+  rows: Pick<OssRepoRow, "id" | "repo" | "list" | "reasons" | "why" | "summary" | "indonesian" | "starter_label" | "status" | "submitted_by" | "created_at">[],
+): Promise<OpenSourceRepo[]> {
+  const people = rows.some((row) => row.submitted_by) ? await listPeople(1000) : [];
+  const byId = new Map(people.map((person) => [person.id, { username: person.username, name: person.name }]));
+  return rows
+    .map((row) => toOpenSourceRepo({ ...row, submitter: row.submitted_by ? byId.get(row.submitted_by) ?? null : null }))
+    .filter((repo): repo is OpenSourceRepo => repo !== null);
+}
+
+/**
+ * The approved catalogue, oldest first: ours before recommendations is the
+ * directory's job, and within each list the order things were approved in is
+ * as fair as any.
+ */
+export async function listCatalogue(): Promise<OpenSourceRepo[]> {
+  "use cache";
+  cacheLife("board");
+  cacheTag(tags.catalogue, tags.people);
+
+  const supabase = getPublicSupabase();
+  if (!supabase) return SEED_REPOS.map((repo) => ({ ...repo }));
+
+  const { data, error } = await supabase
+    .from("oss_repos")
+    .select(CATALOGUE_COLUMNS)
+    .eq("status", "approved")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    // A deploy ahead of 20261021000000_oss_catalogue.sql loses the repos, not
+    // the directory: products still list, and the log says why.
+    console.warn(`[ahsan] The open source catalogue was skipped: ${error.message}`);
+    return [];
+  }
+  return toCatalogue(data ?? []);
+}
+
+/**
+ * The signed-in person's own submissions, whatever their status. Read with
+ * their session, since RLS shows a pending row to its author alone.
+ */
+export async function listMySubmissions(userId: string): Promise<OpenSourceRepo[]> {
+  const supabase = await getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("oss_repos")
+    .select(CATALOGUE_COLUMNS)
+    .eq("submitted_by", userId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.warn(`[ahsan] Your submissions could not be read: ${error.message}`);
+    return [];
+  }
+  return toCatalogue(data ?? []);
+}
+
+/** Every row, for /admin. RLS returns all of them only to a site admin. */
+export async function listCatalogueForAdmin(): Promise<OpenSourceRepo[]> {
+  const supabase = await getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("oss_repos")
+    .select(CATALOGUE_COLUMNS)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return toCatalogue(data ?? []);
+}
+
+/** Whether the signed-in person curates the catalogue. */
+export async function isSiteAdmin(): Promise<boolean> {
+  const supabase = await getSupabase();
+  if (!supabase) return false;
+
+  const { data, error } = await supabase.rpc("is_site_admin");
+  if (error) {
+    // Before the migration there are no admins, which is the safe answer.
+    console.warn(`[ahsan] Admin check failed: ${error.message}`);
+    return false;
+  }
+  return data === true;
 }

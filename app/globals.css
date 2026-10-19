@@ -4084,3 +4084,138 @@ form button[aria-busy="true"]::after,
    push the column — and the page — wider than a phone. */
 .pf-main, .pf-side { min-width: 0; }
 .pf-products, .oss-record { grid-template-columns: minmax(0, 1fr); }
+
+/* ------------------------------------------------- catalogue: why + who */
+.dx-head-link {
+  border: 1px solid var(--dx-line); border-radius: 8px; color: var(--dx-ink); flex: none; font-size: 13px;
+  font-weight: 600; padding: 8px 12px;
+}
+.dx-head-link:hover { background: var(--dx-soft); }
+.dx-why { color: var(--dx-muted); font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
+.dx-why > span { color: var(--dx-text); font-weight: 600; }
+.dx-why a { color: var(--dx-text); text-decoration: underline; text-underline-offset: 2px; }
+.dx-suggest { color: var(--dx-muted); font-size: 13px; margin: 18px 0 0; text-align: center; }
+.dx-suggest a { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ----------------------------------------------------- repo form & admin
+   /recommend and /admin: the catalogue's way in, and its queue. */
+.ob-card {
+  background: #fff; border: 1px solid var(--dx-line); border-radius: 14px; margin: 0 auto; max-width: 720px;
+  padding: 22px;
+}
+.ob-card h2 { color: var(--dx-ink); font-size: 17px; font-weight: 650; margin: 0 0 4px; }
+.ob-notice {
+  background: #ecfdf3; border-radius: 10px; color: #047857; font-size: 14px; margin: 0 auto 16px; max-width: 720px;
+  padding: 10px 14px;
+}
+.ob-signin { align-items: center; display: flex; gap: 16px; justify-content: space-between; }
+.ob-signin p { color: var(--dx-text); font-size: 14px; margin: 0; }
+
+.rf { display: grid; gap: 18px; }
+.rf-field { border: 0; display: grid; gap: 6px; margin: 0; min-width: 0; padding: 0; }
+.rf-field > label, .rf-field > legend { color: var(--dx-ink); font-size: 14px; font-weight: 600; padding: 0; }
+.rf-field > label span, .rf-field > legend span { color: var(--dx-warm); }
+.rf-hint { color: var(--dx-muted); font-size: 12px; line-height: 1.5; margin: 0; }
+.rf input[type="text"], .rf textarea, .rf select {
+  background: #fff; border: 1px solid var(--dx-line); border-radius: 8px; color: var(--dx-ink); font-size: 14px;
+  margin: 0; padding: 9px 11px; width: 100%;
+}
+.rf textarea { line-height: 1.5; resize: vertical; }
+.rf input:focus, .rf textarea:focus, .rf select:focus { border-color: var(--dx-ink); outline: none; }
+.rf .has-error input, .rf .has-error textarea { border-color: #f87171; }
+.rf-error { color: #b91c1c; font-size: 13px; margin: 0; }
+.rf-error-form { background: #fef2f2; border-radius: 8px; padding: 9px 12px; }
+.rf-fixed { background: var(--dx-soft); border-radius: 8px; font-family: var(--font-geist-mono), monospace; font-size: 13px; margin: 0; padding: 9px 11px; }
+.rf-choices { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 6px; }
+.rf-choice {
+  align-items: flex-start; border: 1px solid var(--dx-line); border-radius: 10px; cursor: pointer; display: flex;
+  gap: 10px; padding: 12px;
+}
+.rf-choice:has(input:checked) { border-color: var(--dx-ink); box-shadow: inset 0 0 0 1px var(--dx-ink); }
+.rf-choice input { margin: 3px 0 0; }
+.rf-choice span { display: flex; flex-direction: column; gap: 2px; }
+.rf-choice strong { font-size: 14px; }
+.rf-choice small { color: var(--dx-muted); font-size: 12px; line-height: 1.45; }
+.rf-checks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rf-check {
+  align-items: center; border: 1px solid var(--dx-line); border-radius: 99px; cursor: pointer; display: inline-flex;
+  font-size: 13px; gap: 7px; padding: 6px 12px;
+}
+.rf-check:has(input:checked) { background: var(--dx-ink); border-color: var(--dx-ink); color: #fff; }
+.rf-check input { margin: 0; }
+.rf-more { border-top: 1px solid var(--dx-line); padding-top: 12px; }
+.rf-more summary { color: var(--dx-muted); cursor: pointer; font-size: 13px; font-weight: 600; }
+.rf-more[open] summary { margin-bottom: 14px; }
+.rf-more .rf-field + .rf-field { margin-top: 14px; }
+.rf-submit { border: 0; justify-self: start; min-height: 40px; }
+.rf-submit:disabled { cursor: progress; opacity: .7; }
+
+.adm-head { max-width: none; }
+.adm-page .ob-card, .adm-page .ob-notice { max-width: none; }
+.adm-section { margin-top: 28px; }
+.adm-section-head { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
+.adm-section-head h2 { color: var(--dx-ink); font-size: 17px; font-weight: 650; margin: 0; }
+.adm-section-head h2 span { color: var(--dx-faint); font-family: var(--font-geist-mono), monospace; font-size: 13px; margin-left: 6px; }
+.adm-section-head a { color: var(--dx-muted); font-size: 13px; font-weight: 600; }
+.adm-list { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); list-style: none; margin: 0; padding: 0; }
+.adm-item { background: #fff; border: 1px solid var(--dx-line); border-radius: 12px; padding: 14px 16px; }
+.adm-item-head { align-items: center; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.adm-item-head > a { color: var(--dx-ink); font-size: 15px; font-weight: 650; margin-right: 4px; overflow-wrap: anywhere; }
+.adm-item-head > a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.adm-status { border-radius: 99px; font-size: 11px; font-weight: 650; padding: 2px 8px; }
+.adm-status-pending { background: #fef3c7; color: #92400e; }
+.adm-status-approved { background: #ecfdf3; color: #047857; }
+.adm-status-rejected { background: #fef2f2; color: #b91c1c; }
+.adm-list-tag { border: 1px solid var(--dx-line); border-radius: 5px; color: var(--dx-muted); font-size: 11px; padding: 2px 6px; }
+.adm-why { color: var(--dx-text); font-size: 14px; line-height: 1.5; margin: 8px 0 0; }
+.adm-summary { color: var(--dx-muted); font-size: 13px; margin: 4px 0 0; }
+.adm-meta { color: var(--dx-faint); font-size: 12px; margin: 6px 0 0; }
+.adm-meta a { color: var(--dx-text); text-decoration: underline; text-underline-offset: 2px; }
+.adm-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.adm-actions form { margin: 0; }
+.adm-button {
+  align-items: center; background: #fff; border: 1px solid var(--dx-line); border-radius: 7px; color: var(--dx-ink);
+  display: inline-flex; font-size: 12px; font-weight: 600; height: 30px; padding: 0 11px;
+}
+.adm-button:hover { background: var(--dx-soft); }
+.adm-button-primary { background: var(--dx-ink); border-color: var(--dx-ink); color: #fff; }
+.adm-button-primary:hover { background: #27272a; }
+.adm-button-danger:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+.adm-button-quiet { color: var(--dx-muted); }
+.adm-rejected { margin-top: 28px; }
+.adm-rejected summary { color: var(--dx-muted); cursor: pointer; font-size: 14px; font-weight: 600; }
+.adm-add, .adm-edit { margin-top: 32px; }
+.adm-edit { border-color: var(--dx-ink); margin-bottom: 8px; margin-top: 8px; }
+.adm-note { color: var(--dx-muted); font-size: 13px; margin: 0 0 16px; }
+
+@media (max-width: 640px) {
+  .rf-choices { grid-template-columns: minmax(0, 1fr); }
+  .ob-signin { align-items: stretch; flex-direction: column; }
+  .ob-card { padding: 16px; }
+}
+/* The shared form rule near the top (cream fill, 12px radius, 18px gap
+   below) is built with :not() chains that outrank a plain class. These forms
+   speak the directory's language, so they restate theirs at matching weight. */
+form.rf input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="search"]),
+form.rf textarea,
+form.rf select,
+form.oss-add-form input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="search"]),
+form.oss-add-form select {
+  background: #fff; border: 1px solid var(--dx-line); border-radius: 8px; font-size: 14px; line-height: 1.5;
+  margin: 0; padding: 9px 11px;
+}
+form.oss-add-form select { width: auto; }
+form.rf input:focus-visible, form.rf textarea:focus-visible, form.rf select:focus-visible,
+form.oss-add-form input:focus-visible, form.oss-add-form select:focus-visible {
+  border-color: var(--dx-ink); outline: 3px solid rgba(9, 9, 11, .06); outline-offset: 0;
+}
+form.rf label { margin-bottom: 0; }
+.rf-more > summary {
+  border: 0; border-radius: 0; display: list-item; font-size: 13px; list-style: disclosure-closed; padding: 0;
+}
+.rf-more[open] > summary { list-style: disclosure-open; }
+.rf-more > summary::-webkit-details-marker { display: revert; }
+.adm-rejected > summary {
+  border: 0; border-radius: 0; display: list-item; list-style: disclosure-closed; padding: 0;
+}
+.adm-rejected[open] > summary { list-style: disclosure-open; margin-bottom: 0; }

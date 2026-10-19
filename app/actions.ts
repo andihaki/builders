@@ -22,6 +22,8 @@ import { fetchLinkMetadata, normaliseLink, titleFromLink } from "./lib/link-meta
 import { currentViewer, viewerId } from "./lib/session";
 import { normalisePeopleTerms } from "./lib/people";
 import { isOssRelation, parseRepoRef } from "./lib/oss";
+import { validateRepoSubmission, type RepoSubmissionInput } from "./lib/open-source";
+import { isSiteAdmin } from "./lib/data";
 import { signInPath } from "./lib/urls";
 import {
   PROFILE_LIMITS,
@@ -81,6 +83,11 @@ export type LinkPreview = {
 export type LinkPreviewResult =
   | { ok: true; preview: LinkPreview }
   | { ok: false; error: string };
+
+export type RepoFormState = {
+  errors: Partial<Record<"repo" | "list" | "why" | "summary" | "starterLabel" | "form", string>>;
+  values: RepoSubmissionInput & { contributed: string };
+};
 
 export type ProfileState = {
   errors: ProfileFieldErrors & { form?: string };
@@ -1352,4 +1359,150 @@ function ossChanged(username: string): void {
   revalidatePath("/");
   revalidatePath(`/u/${username}`);
   revalidatePath("/get-started");
+}
+
+
+/**
+ * Saves a repository to the open source catalogue.
+ *
+ * One action, three callers, told apart by `mode`:
+ *
+ *   - `submit` — a member on /recommend. Written as `pending`, under their
+ *     name; it reaches the directory once an admin approves it. If they say
+ *     they contributed to it or maintain it, that goes on their own record
+ *     too, so the badge is there the moment the repo is.
+ *   - `add` — an admin on /admin, written straight as `approved`.
+ *   - `edit` — an admin changing an existing row, by `id`.
+ *
+ * Whether somebody may do the last two is the database's call (the policies
+ * in 20261021000000_oss_catalogue.sql); the check here only turns a refusal
+ * into a sentence.
+ */
+export async function saveRepo(_state: RepoFormState, formData: FormData): Promise<RepoFormState> {
+  const locale = await currentLocale();
+  const values: RepoFormState["values"] = {
+    repo: text(formData, "repo"),
+    list: text(formData, "list") || "recommended",
+    reasons: formData.getAll("reasons").filter((value): value is string => typeof value === "string"),
+    why: text(formData, "why"),
+    summary: text(formData, "summary"),
+    indonesian: formData.get("indonesian") === "on",
+    starterLabel: text(formData, "starterLabel"),
+    contributed: text(formData, "contributed"),
+  };
+  const mode = text(formData, "mode");
+
+  const viewer = await currentViewer();
+  if (!viewer) redirect(signInPath("/recommend"));
+
+  const checked = validateRepoSubmission(values, locale);
+  if (!checked.ok) return { errors: checked.errors, values };
+  const repo = checked.value;
+
+  const admin = mode === "submit" ? false : await isSiteAdmin();
+  if (mode !== "submit" && !admin) {
+    return { errors: { form: tx(locale, "Hanya admin yang bisa melakukan ini.", "Only an admin can do this.") }, values };
+  }
+
+  const supabase = await requireSupabase();
+  const row = {
+    repo: repo.repo,
+    list: repo.list,
+    reasons: repo.reasons,
+    why: repo.why,
+    summary: repo.summary,
+    indonesian: repo.indonesian,
+    starter_label: repo.starterLabel,
+  };
+
+  if (mode === "edit") {
+    const id = Number(text(formData, "id"));
+    if (!Number.isInteger(id)) return { errors: { form: tx(locale, "Repo tidak ditemukan.", "Repo not found.") }, values };
+    const { error } = await supabase.from("oss_repos").update(row).eq("id", id);
+    if (error) return { errors: repoWriteError(error, locale), values };
+  } else {
+    const { error } = await supabase.from("oss_repos").insert({
+      ...row,
+      submitted_by: viewer.id,
+      ...(mode === "add"
+        ? { status: "approved", reviewed_by: viewer.id, reviewed_at: new Date().toISOString() }
+        : {}),
+    });
+    if (error) return { errors: repoWriteError(error, locale), values };
+
+    // "I contributed to this" / "I maintain this" also goes on the person's
+    // own record, which is where the directory's people badges come from.
+    if (values.contributed === "contributor" || values.contributed === "maintainer") {
+      const { error: recordError } = await supabase
+        .from("oss_contributions")
+        .insert({ user_id: viewer.id, repo: repo.repo, relation: values.contributed });
+      if (recordError && recordError.code !== "23505") {
+        console.warn(`[ahsan] The submitter's own record was not updated: ${recordError.message}`);
+      }
+      updateTag(tags.oss);
+    }
+  }
+
+  catalogueChanged();
+  if (mode === "submit") redirect("/recommend?sent=1");
+  redirect(`/admin?saved=${encodeURIComponent(repo.repo)}`);
+}
+
+function repoWriteError(error: { code?: string; message: string }, locale: Locale): RepoFormState["errors"] {
+  // 23505: oss_repos_once — the repo is already listed, approved or not.
+  if (error.code === "23505") {
+    return { repo: tx(locale, "Repo ini sudah ada di katalog atau sedang direview.", "This repo is already in the catalogue or awaiting review.") };
+  }
+  // 42501: a policy refused it.
+  if (error.code === "42501") {
+    return { form: tx(locale, "Kamu tidak punya izin untuk ini.", "You do not have permission for this.") };
+  }
+  throw new Error(error.message);
+}
+
+/** An admin's decision on a submission: approve or reject. */
+export async function reviewRepo(formData: FormData): Promise<void> {
+  const viewer = await currentViewer();
+  if (!viewer) redirect(signInPath("/admin"));
+
+  const id = Number(text(formData, "id"));
+  const decision = text(formData, "decision");
+  if (!Number.isInteger(id) || (decision !== "approved" && decision !== "rejected")) redirect("/admin");
+
+  const supabase = await requireSupabase();
+  const { error } = await supabase
+    .from("oss_repos")
+    .update({ status: decision, reviewed_by: viewer.id, reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  catalogueChanged();
+  redirect("/admin");
+}
+
+/**
+ * Removes a repository: an admin from the catalogue, or a member withdrawing
+ * their own submission while it still waits. RLS decides which applies.
+ */
+export async function deleteRepo(formData: FormData): Promise<void> {
+  const viewer = await currentViewer();
+  const back = text(formData, "returnTo") === "/admin" ? "/admin" : "/recommend";
+  if (!viewer) redirect(signInPath(back));
+
+  const id = Number(text(formData, "id"));
+  if (!Number.isInteger(id)) redirect(back);
+
+  const supabase = await requireSupabase();
+  const { error } = await supabase.from("oss_repos").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  catalogueChanged();
+  redirect(back);
+}
+
+function catalogueChanged(): void {
+  updateTag(tags.catalogue);
+  revalidatePath("/");
+  revalidatePath("/recommend");
+  revalidatePath("/admin");
 }

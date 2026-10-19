@@ -189,6 +189,8 @@ function clip(value: string, maximum: number): string {
 
 export type GitHubRepositoryStats = {
   stars: number;
+  /** The repository's own one-line description. */
+  description: string;
   openIssues: number;
   language: string;
   pushedAt: string;
@@ -197,6 +199,7 @@ export type GitHubRepositoryStats = {
 
 type GitHubRepositoryStatsResponse = {
   stargazers_count?: unknown;
+  description?: unknown;
   open_issues_count?: unknown;
   language?: unknown;
   pushed_at?: unknown;
@@ -230,6 +233,7 @@ export async function getGitHubRepositoryStats(
     const data = (await response.json()) as GitHubRepositoryStatsResponse;
     return {
       stars: numberValue(data.stargazers_count),
+      description: stringValue(data.description).slice(0, 200),
       openIssues: numberValue(data.open_issues_count),
       language: stringValue(data.language),
       pushedAt: stringValue(data.pushed_at),

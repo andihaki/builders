@@ -5,7 +5,7 @@ import { Logo } from "../logo";
 import { signOut } from "../auth-actions";
 import { signInPath } from "../lib/urls";
 import { currentViewer, type Viewer } from "../lib/session";
-import { countIncomingApplications, countUnseenNotices } from "../lib/data";
+import { countIncomingApplications, countUnseenNotices, isSiteAdmin } from "../lib/data";
 import { readPublicly } from "../lib/public-read";
 import { HeaderMenu } from "./header-menu";
 import { SignOutButton } from "./sign-out-button";
@@ -14,7 +14,7 @@ import { currentLocale } from "../lib/locale-server";
 import { tx, type Locale } from "../lib/locale";
 
 /** Which top-level section the current page belongs to. */
-export type Section = "home" | "explore" | "people" | "about" | "feedback" | "";
+export type Section = "home" | "recommend" | "admin" | "explore" | "people" | "about" | "feedback" | "";
 
 export function Arrow({ diagonal = false }: { diagonal?: boolean }) {
   return (
@@ -36,12 +36,14 @@ export function Brand({ footer = false, locale }: { footer?: boolean; locale: Lo
 /*
  * The main menu.
  *
- * The directory is the site, so the menu is short: the directory itself, then
- * the two pages that answer for the site — what this is, and where to say it
- * is broken. Listing a project is the header's button, not a menu entry.
+ * The directory is the site, so the menu is short: the directory itself, the
+ * way into it for a repo, then the two pages that answer for the site — what
+ * this is, and where to say it is broken. Listing a product is the header's
+ * button, not a menu entry.
  */
 const LINKS: { href: string; label: string; labelId: string; key: Section; icon: HeaderIconName }[] = [
   { href: "/", label: "Directory", labelId: "Direktori", key: "home", icon: "home" },
+  { href: "/recommend", label: "Suggest a repo", labelId: "Usulkan repo", key: "recommend", icon: "add" },
   { href: "/about", label: "About", labelId: "Tentang", key: "about", icon: "about" },
   { href: "/feedback", label: "Feedback", labelId: "Masukan", key: "feedback", icon: "feedback" },
 ];
@@ -169,15 +171,18 @@ async function VisitorHeader({
   // An application nobody sees is an application nobody answers, and a
   // decision nobody sees is the same — so both counts ride along in the header
   // rather than waiting to be found.
-  const [incomingResult, unseenResult] = viewer
+  const [incomingResult, unseenResult, adminResult] = viewer
     ? await Promise.all([
         readPublicly("incoming applications in header", () => countIncomingApplications(viewer.id), 0),
         readPublicly("notifications in header", () => countUnseenNotices(viewer.id), 0),
+        readPublicly("admin check in header", () => isSiteAdmin(), false),
       ])
     : [
         { value: 0, unavailable: false },
         { value: 0, unavailable: false },
+        { value: false, unavailable: false },
       ];
+  const admin = adminResult.value;
   const incoming = incomingResult.value;
   const unseen = unseenResult.value;
   const waiting = incoming + unseen;
@@ -197,21 +202,21 @@ async function VisitorHeader({
                 </svg>
                 {waiting > 0 ? <span className="notification-dot">{waiting}</span> : null}
               </Link>
-              <AccountMenu viewer={viewer} waiting={waiting} locale={locale} />
+              <AccountMenu viewer={viewer} waiting={waiting} admin={admin} locale={locale} />
               <Link className="primary-action" href="/new">
-                <span aria-hidden="true">+</span> {tx(locale, "Daftarkan project", "List a project")}
+                <span aria-hidden="true">+</span> {tx(locale, "Daftarkan produk", "List a product")}
               </Link>
             </>
           ) : (
             <>
               <Link className="nav-login" href={signInPath(destination)}>{tx(locale, "Masuk", "Sign in")}</Link>
               <Link className="primary-action" href="/new">
-                <span aria-hidden="true">+</span> {tx(locale, "Daftarkan project", "List a project")}
+                <span aria-hidden="true">+</span> {tx(locale, "Daftarkan produk", "List a product")}
               </Link>
             </>
           )}
 
-          <MobileHeaderMenu active={active} returnTo={destination} viewer={viewer} waiting={waiting} locale={locale} />
+          <MobileHeaderMenu active={active} returnTo={destination} viewer={viewer} waiting={waiting} admin={admin} locale={locale} />
         </div>
       </div>
     </header>
@@ -231,7 +236,7 @@ function AccountIdentity({ viewer }: { viewer: Viewer }) {
   );
 }
 
-function AccountMenu({ viewer, waiting, locale }: { viewer: Viewer; waiting: number; locale: Locale }) {
+function AccountMenu({ viewer, waiting, admin, locale }: { viewer: Viewer; waiting: number; admin: boolean; locale: Locale }) {
   return (
     <HeaderMenu
       className="account-menu"
@@ -261,12 +266,18 @@ function AccountMenu({ viewer, waiting, locale }: { viewer: Viewer; waiting: num
           </Link>
           <Link href="/new">
             <HeaderIcon name="add" />
-            <span>{tx(locale, "Daftarkan project", "List a project")}</span>
+            <span>{tx(locale, "Daftarkan produk", "List a product")}</span>
           </Link>
           <Link href="/account/language">
             <HeaderIcon name="language" />
             <span>{tx(locale, "Bahasa", "Language")}</span>
           </Link>
+          {admin ? (
+            <Link href="/admin">
+              <HeaderIcon name="steps" />
+              <span>Admin</span>
+            </Link>
+          ) : null}
         </nav>
         <form className="account-signout" action={signOut}>
           <SignOutButton />
@@ -281,12 +292,14 @@ function MobileHeaderMenu({
   returnTo,
   viewer,
   waiting,
+  admin,
   locale,
 }: {
   active: Section;
   returnTo: string;
   viewer?: Viewer | null;
   waiting: number;
+  admin: boolean;
   locale: Locale;
 }) {
   return (
@@ -319,7 +332,7 @@ function MobileHeaderMenu({
 
         <Link className="mobile-project-action" href="/new">
           <HeaderIcon name="add" />
-          <span>{tx(locale, "Daftarkan project", "List a project")}</span>
+          <span>{tx(locale, "Daftarkan produk", "List a product")}</span>
         </Link>
 
         {viewer ? (
@@ -347,6 +360,12 @@ function MobileHeaderMenu({
                 <HeaderIcon name="language" />
                 <span>{tx(locale, "Bahasa", "Language")}</span>
               </Link>
+              {admin ? (
+                <Link href="/admin">
+                  <HeaderIcon name="steps" />
+                  <span>Admin</span>
+                </Link>
+              ) : null}
             </nav>
             <form className="account-signout" action={signOut}>
               <SignOutButton />
@@ -394,7 +413,8 @@ export async function SiteFooter() {
       <p>{tx(locale, "Direktori project yang bisa kamu kontribusikan.", "A directory of projects you can contribute to.")}</p>
       <nav aria-label={tx(locale, "Navigasi footer", "Footer navigation")}>
         <Link href="/">{tx(locale, "Direktori", "Directory")}</Link>
-        <Link href="/new">{tx(locale, "Daftarkan project", "List a project")}</Link>
+        <Link href="/recommend">{tx(locale, "Usulkan repo", "Suggest a repo")}</Link>
+        <Link href="/new">{tx(locale, "Daftarkan produk", "List a product")}</Link>
         <Link href="/about">{tx(locale, "Tentang Kami", "About Us")}</Link>
         <Link href="/feedback">{tx(locale, "Masukan", "Feedback")}</Link>
         <Link href="/privacy">{tx(locale, "Privasi", "Privacy")}</Link>

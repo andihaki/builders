@@ -4,8 +4,8 @@ import type { GitHubRepositoryStats } from "./github";
 import { parseGitHubRepositoryUrl } from "./github";
 import { tx, type Locale } from "./locale";
 import {
-  localized,
   reasonLabel,
+  repoBadges,
   repoUrl,
   starterIssuesUrl,
   type OpenSourceRepo,
@@ -49,6 +49,10 @@ export type DirectoryEntry = {
   /** Who it belongs to: a GitHub owner, or the founder's name. */
   owner: string;
   description: string;
+  /** A catalogue repo's reason for being listed, in its submitter's words. */
+  why?: string;
+  /** Who put a catalogue repo forward. */
+  submittedBy?: { username: string; name: string } | null;
   /** Why a repo is listed, or the roles a product is asking for. */
   labels: string[];
   /** Hand-set trust signals about the people around it — see `badges.ts`. */
@@ -95,10 +99,12 @@ export function repoEntry(
     source: repo.list,
     name: repo.repo,
     owner: repo.owner,
-    description: localized(repo.summary, locale),
-    labels: repo.reasons.filter((reason) => reason !== "ours").map((reason) => reasonLabel(reason, locale)),
-    badges: mergeBadges(repo.badges, memberBadges(`${repo.owner}/${repo.repo}`, members)),
-    language: repo.stats?.language || repo.language,
+    description: repo.summary,
+    why: repo.why,
+    submittedBy: repo.submittedBy,
+    labels: repo.reasons.map((reason) => reasonLabel(reason, locale)),
+    badges: mergeBadges(repoBadges(repo), memberBadges(`${repo.owner}/${repo.repo}`, members)),
+    language: repo.stats?.language ?? "",
     stars: repo.stats ? repo.stats.stars : null,
     href: repoUrl(repo),
     actionHref: starterIssuesUrl(repo),
