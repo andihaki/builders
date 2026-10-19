@@ -77,6 +77,24 @@ test("a product open to PRs is on the GitHub path, linking to its issues", () =>
   assert.ok(entry.external);
 });
 
+test("a product with a GitHub repo is on the code path even before it opens to PRs", () => {
+  const [entry, ...rest] = productEntries(product({ repoUrl: "https://github.com/ana/tool" }), describe, roleName, "en");
+  assert.equal(rest.length, 0);
+  assert.equal(entry.track, "github");
+  assert.equal(entry.actionKind, "repo");
+  assert.equal(entry.actionHref, "https://github.com/ana/tool");
+  assert.deepEqual(entry.labels, []);
+
+  const [open] = productEntries(
+    product({ repoUrl: "https://github.com/ana/tool", openForGitHubContributions: true }),
+    describe,
+    roleName,
+    "en",
+  );
+  assert.equal(open.actionKind, "issues");
+  assert.deepEqual(open.labels, ["Open to PRs"]);
+});
+
 test("a product naming roles is on the role path, linking to its roles here", () => {
   const [entry, ...rest] = productEntries(product({ openSeatCount: 2, openRoles: ["design", "qa", "pm"] }), describe, roleName, "en");
   assert.equal(rest.length, 0);

@@ -509,7 +509,7 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
       <div className="dx-cell-action" role="cell">
         {entry.external ? (
           <a className="dx-action" href={entry.actionHref} {...external}>
-            {entry.track === "github" ? tx(locale, "Lihat isu", "Issues") : entry.actionLabel} <span aria-hidden="true">↗</span>
+            {entry.actionKind === "issues" ? tx(locale, "Lihat isu", "Issues") : tx(locale, "Repo", "Repo")} <span aria-hidden="true">↗</span>
           </a>
         ) : (
           <Link className="dx-action" href={entry.actionHref}>

@@ -64,6 +64,8 @@ export type DirectoryEntry = {
   /** The one action that matters on this path. */
   actionHref: string;
   actionLabel: string;
+  /** What the button opens, so the table can label it in one short word. */
+  actionKind: "issues" | "repo" | "roles";
   /** True when `actionHref` leaves this site. */
   external: boolean;
 };
@@ -109,6 +111,7 @@ export function repoEntry(
     href: repoUrl(repo),
     actionHref: starterIssuesUrl(repo),
     actionLabel: tx(locale, "Isu pemula di GitHub", "Starter issues on GitHub"),
+    actionKind: "issues",
     external: true,
   };
 }
@@ -124,7 +127,12 @@ export function productEntries<P extends DirectoryProduct>(
   roleName: (role: string) => string,
   locale: Locale,
 ): DirectoryEntry[] {
-  const repository = project.openForGitHubContributions ? parseGitHubRepositoryUrl(project.repoUrl) : null;
+  // Every product with a GitHub repository is on the code path — a visitor
+  // looking for code to read or improve should find it. Whether the owner has
+  // said they welcome pull requests decides the label and where the button
+  // goes: straight to the issues, or to the repository to look around first.
+  const repository = parseGitHubRepositoryUrl(project.repoUrl);
+  const welcomesPRs = Boolean(repository) && project.openForGitHubContributions;
   const page = `/projects/${project.slug}`;
   const base = {
     source: "product" as const,
@@ -148,9 +156,10 @@ export function productEntries<P extends DirectoryProduct>(
       ...base,
       key: `product:${project.id}:github`,
       track: "github",
-      labels: [],
-      actionHref: `${repository.url}/issues`,
-      actionLabel: tx(locale, "Isu di GitHub", "Issues on GitHub"),
+      labels: welcomesPRs ? [tx(locale, "Terbuka untuk PR", "Open to PRs")] : [],
+      actionHref: welcomesPRs ? `${repository.url}/issues` : repository.url,
+      actionLabel: welcomesPRs ? tx(locale, "Isu di GitHub", "Issues on GitHub") : tx(locale, "Lihat repo", "View repo"),
+      actionKind: welcomesPRs ? "issues" : "repo",
       external: true,
     });
   }
@@ -162,6 +171,7 @@ export function productEntries<P extends DirectoryProduct>(
       labels: project.openRoles.map(roleName),
       actionHref: `${page}?tab=collaboration#help-heading`,
       actionLabel: tx(locale, "Lihat peran", "See the roles"),
+      actionKind: "roles",
       external: false,
     });
   }
