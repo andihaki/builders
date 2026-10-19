@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { defaultShareImage, siteUrl } from "./content";
 import { LanguageProvider } from "./components/language-provider";
 import { currentLocale } from "./lib/locale-server";
+import { cookies } from "next/headers";
+import { isTheme, THEME_COOKIE } from "./lib/theme";
 import "./globals.css";
 
 export const instant = false;
@@ -17,7 +19,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const viewport: Viewport = { themeColor: "#f8f6f0" };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8f6f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#13120f" },
+  ],
+};
 
 // Each page sets its own title, description and canonical. The share metadata
 // here is the fallback: pages with an opengraph-image file (profiles,
@@ -47,9 +54,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await currentLocale();
+  // A chosen theme is rendered on the server so the first paint is already
+  // right; with none, globals.css follows the device.
+  const chosen = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme = isTheme(chosen) ? chosen : undefined;
 
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme={theme}>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <LanguageProvider locale={locale}>{children}</LanguageProvider>
       </body>

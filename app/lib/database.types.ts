@@ -197,6 +197,19 @@ export type OssContributionRow = {
   created_at: string;
 };
 
+/** 20261022000000_repo_signals.sql — GitHub facts per listed repository; written only by the refresh-repos Edge Function. */
+export type RepoSignalRow = {
+  repo: string;
+  stars: number | null;
+  language: string;
+  description: string;
+  pushed_at: string | null;
+  archived: boolean;
+  outside_prs: number | null;
+  checked_at: string;
+  last_error: string | null;
+};
+
 /** 20261021000000_oss_catalogue.sql — the open source catalogue. */
 export type OssRepoRow = {
   id: number;
@@ -309,6 +322,12 @@ export type Database = {
       site_admins: {
         Row: SiteAdminRow;
         // Written by hand in the SQL editor, never by the app.
+        Insert: never;
+        Update: never;
+      };
+      repo_signals: {
+        Row: RepoSignalRow;
+        // The service role writes, from the Edge Function; the app only reads.
         Insert: never;
         Update: never;
       };

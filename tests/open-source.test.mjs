@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { SEED_REPOS, repoBadges, starterIssuesUrl, toOpenSourceRepo, validateRepoSubmission } from "../app/lib/open-source.ts";
-import { getGitHubRepositoryStats } from "../app/lib/github.ts";
 
 const input = (over = {}) => ({
   repo: "https://github.com/Acme/Tool/pull/12",
@@ -78,25 +77,4 @@ test("the starter link lands on the repo's labelled open issues", () => {
     new URL(starterIssuesUrl({ owner: "acme", repo: "tool", starterLabel: "" })).searchParams.get("q"),
     "is:issue is:open",
   );
-});
-
-test("GitHub numbers are read when available and quietly skipped when not", async () => {
-  const requests = [];
-  const ok = async (url, init) => {
-    requests.push({ url, auth: init.headers.Authorization });
-    return Response.json({ stargazers_count: 42, description: "A tool.", open_issues_count: 3, language: "Go", pushed_at: "2026-10-01T00:00:00Z", archived: false });
-  };
-  assert.deepEqual(await getGitHubRepositoryStats("acme", "tool", ok, "secret"), {
-    stars: 42,
-    description: "A tool.",
-    openIssues: 3,
-    language: "Go",
-    pushedAt: "2026-10-01T00:00:00Z",
-    archived: false,
-  });
-  assert.equal(requests[0].url, "https://api.github.com/repos/acme/tool");
-  assert.equal(requests[0].auth, "Bearer secret");
-
-  assert.equal(await getGitHubRepositoryStats("acme", "tool", async () => new Response("", { status: 403 })), null);
-  assert.equal(await getGitHubRepositoryStats("acme", "tool", async () => { throw new Error("offline"); }), null);
 });

@@ -5,7 +5,7 @@ import Link from "@/app/components/responsive-link";
 import { shareCard } from "../content";
 import { SiteFooter, SiteHeader } from "../components/shell";
 import { Skeleton } from "../components/skeleton";
-import { listOssMembers, listProjects } from "../lib/data";
+import { listOssMembers, listProjects, listRepoSignals } from "../lib/data";
 import { readPublicly } from "../lib/public-read";
 import { projectBlurb } from "../lib/brief";
 import {
@@ -14,19 +14,27 @@ import {
   badgeCounts,
   directoryFacets,
   filterDirectory,
+  isDirectoryOpening,
+  isPRTier,
+  prTierCounts,
+  prTierLabel,
   isDirectorySource,
+  openingCounts,
+  openingLabel,
   isDirectoryTrack,
   productEntries,
   repoEntry,
   sourceLabel,
   type DirectoryEntry,
   type DirectoryFilters,
-  type DirectorySource,
   type DirectoryTrack,
 } from "../lib/directory";
-import { listOpenSourceRepos } from "../lib/open-source-live";
+import { listOpenSourceRepos, signalsFor } from "../lib/open-source-live";
+import { parseGitHubRepositoryUrl } from "../lib/github";
 import { badgeKindLabel, badgeLabel, badgePeople, isBadgeKind, type Badge, type BadgeKind } from "../lib/badges";
 import { roleLabel } from "../lib/roles";
+import { ProjectLogo } from "../components/project-logo";
+import { LinkIcon } from "../components/link-icons";
 import { currentLocale } from "../lib/locale-server";
 import { tx, type Locale } from "../lib/locale";
 
@@ -51,9 +59,13 @@ function readFilters(query: Record<string, string | string[] | undefined>): Dire
   const track = one(query.track);
   const source = one(query.source);
   const badge = one(query.badge);
+  const open = one(query.open);
+  const pr = one(query.pr);
   return {
     track: isDirectoryTrack(track) ? track : "github",
     source: isDirectorySource(source) ? source : "",
+    open: isDirectoryOpening(open) ? open : "",
+    pr: isPRTier(pr) ? pr : "",
     badge: isBadgeKind(badge) ? badge : "",
     facet: one(query.facet).slice(0, 60),
     q: one(query.q).slice(0, 100),
@@ -64,6 +76,8 @@ function pathFor(filters: DirectoryFilters): string {
   const params = new URLSearchParams();
   if (filters.track !== "github") params.set("track", filters.track);
   if (filters.source) params.set("source", filters.source);
+  if (filters.open) params.set("open", filters.open);
+  if (filters.pr) params.set("pr", filters.pr);
   if (filters.badge) params.set("badge", filters.badge);
   if (filters.facet) params.set("facet", filters.facet);
   if (filters.q) params.set("q", filters.q);
@@ -145,18 +159,27 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
 
 async function DirectoryBody({ query, locale }: { query: SearchParams; locale: Locale }) {
   const filters = readFilters(await query);
+  // GitHub's facts come from the database, read once and shared by catalogue
+  // repos and products; nothing on this page calls GitHub.
+  const signalsResult = await readPublicly("repository signals in the directory", () => listRepoSignals(), {});
+  const signals = signalsResult.value;
   const [reposResult, projectsResult, membersResult] = await Promise.all([
-    readPublicly("open source repos in the directory", () => listOpenSourceRepos(), []),
+    readPublicly("open source repos in the directory", () => listOpenSourceRepos(signals), []),
     readPublicly("products in the directory", () => listProjects({ lane: "active" }), []),
     readPublicly("members' open source records in the directory", () => listOssMembers(), []),
   ]);
 
   const repos = reposResult.value;
   const members = membersResult.value;
+  const products = projectsResult.value.map((project) => {
+    const repository = parseGitHubRepositoryUrl(project.repoUrl);
+    const found = repository ? signalsFor(signals, repository.owner, repository.repo) : null;
+    return { ...project, repoStats: found?.stats ?? null, repoActivity: found?.activity ?? null };
+  });
   const entries: DirectoryEntry[] = [
     ...repos.filter((repo) => repo.list === "internal").map((repo) => repoEntry(repo, locale, members)),
     ...repos.filter((repo) => repo.list === "recommended").map((repo) => repoEntry(repo, locale, members)),
-    ...projectsResult.value.flatMap((project) =>
+    ...products.flatMap((project) =>
       productEntries(project, projectBlurb, (role) => roleLabel(role, "", locale), locale),
     ),
   ];
@@ -168,8 +191,10 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
     count: onTrack.filter((entry) => entry.source === source).length,
   })).filter(({ count }) => count > 0);
   const badges = badgeCounts(entries, filters.track);
+  const openings = openingCounts(entries, filters.track);
+  const tiers = filters.track === "github" ? prTierCounts(entries) : [];
   const code = filters.track === "github";
-  const filtered = Boolean(filters.source || filters.badge || filters.facet || filters.q);
+  const filtered = Boolean(filters.source || filters.open || filters.pr || filters.badge || filters.facet || filters.q);
 
   return (
     <div className="dx-layout">
@@ -205,6 +230,38 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
             </FacetLink>
           ))}
         </FacetGroup>
+
+        {tiers.length > 0 ? (
+          <FacetGroup title={tx(locale, "Status PR", "PR status")}>
+            {tiers.map(({ tier, count }) => (
+              <FacetLink
+                key={tier}
+                active={filters.pr === tier}
+                href={pathFor({ ...filters, pr: filters.pr === tier ? "" : tier })}
+                count={count}
+                icon={<span className={`dx-tier-dot dx-tier-dot-${tier}`} aria-hidden="true" />}
+              >
+                {prTierLabel(tier, locale)}
+              </FacetLink>
+            ))}
+          </FacetGroup>
+        ) : null}
+
+        {openings.length > 0 ? (
+          <FacetGroup title={tx(locale, "Terbuka untuk", "Open for")}>
+            {openings.map(({ open, count }) => (
+              <FacetLink
+                key={open}
+                active={filters.open === open}
+                href={pathFor({ ...filters, open: filters.open === open ? "" : open })}
+                count={count}
+                icon={<span className={`dx-open-dot dx-open-dot-${open}`} aria-hidden="true" />}
+              >
+                {openingLabel(open, locale)}
+              </FacetLink>
+            ))}
+          </FacetGroup>
+        ) : null}
 
         {badges.length > 0 ? (
           <FacetGroup title={tx(locale, "Tanda", "Signals")}>
@@ -265,6 +322,8 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
           <Form className="dx-search" action="/" role="search">
             {filters.track !== "github" ? <input type="hidden" name="track" value={filters.track} /> : null}
             {filters.source ? <input type="hidden" name="source" value={filters.source} /> : null}
+            {filters.open ? <input type="hidden" name="open" value={filters.open} /> : null}
+            {filters.pr ? <input type="hidden" name="pr" value={filters.pr} /> : null}
             {filters.badge ? <input type="hidden" name="badge" value={filters.badge} /> : null}
             {filters.facet ? <input type="hidden" name="facet" value={filters.facet} /> : null}
             <label>
@@ -445,17 +504,19 @@ function TrackIcon({ track }: { track: DirectoryTrack }) {
 
 function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale }) {
   const external = { target: "_blank", rel: "noopener noreferrer" };
-  const owner = entry.source === "product" ? tx(locale, `oleh ${entry.owner}`, `by ${entry.owner}`) : entry.owner;
-  const sourceTag: Record<DirectorySource, string> = {
-    internal: tx(locale, "milik kami", "ours"),
-    recommended: tx(locale, "rekomendasi", "recommended"),
-    product: tx(locale, "produk builders", "builders' product"),
-  };
+  const owner = entry.kind === "product" ? tx(locale, `oleh ${entry.owner}`, `by ${entry.owner}`) : entry.owner;
 
   return (
-    <div className={`dx-row dx-row-${entry.source}`} role="row">
+    // A repository not taking PRs stays findable for its code, but recedes.
+    <div className={`dx-row ${entry.prTier && !entry.welcomesPRs && entry.track === "github" ? "dx-row-quiet" : ""}`} role="row">
       <div className="dx-cell-main" role="cell">
-        <span className="dx-logo" aria-hidden="true">{entry.name.slice(0, 1).toUpperCase()}</span>
+        <ProjectLogo
+          className="dx-logo"
+          title={entry.name}
+          website={entry.website}
+          logoUrl={entry.logoUrl}
+          fallback={entry.name.slice(0, 1).toUpperCase()}
+        />
         <div className="dx-main-copy">
           <p className="dx-name">
             {entry.href.startsWith("http") ? (
@@ -463,8 +524,30 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
             ) : (
               <Link href={entry.href}>{entry.name}</Link>
             )}
+            {/* Every tier on the code path; on the role path only an invitation,
+                as the sign that this product takes code as well. */}
+            {entry.prTier && (entry.track === "github" || entry.welcomesPRs) ? (
+              <span className={`dx-prs dx-prs-${entry.prTier}`}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="18" r="2.5" />
+                  <path d="M6 8.5v7M18 15.5V9a3 3 0 0 0-3-3h-4m2-2.5L10.5 6 13 8.5" />
+                </svg>
+                {prTierLabel(entry.prTier, locale)}
+              </span>
+            ) : null}
             <span className="dx-owner">{owner}</span>
           </p>
+          {entry.links.length > 0 ? (
+            <p className="dx-links">
+              {entry.links.map((link) => (
+                <a key={link.kind} href={link.href} {...external}>
+                  <LinkIcon kind={link.kind} className="dx-link-icon" />
+                  <span className="sr-only">{link.kind === "github" ? "GitHub: " : tx(locale, "Situs: ", "Website: ")}</span>
+                  {link.label}
+                </a>
+              ))}
+            </p>
+          ) : null}
           {entry.description ? <p className="dx-desc">{entry.description}</p> : null}
           {entry.why ? (
             <p className="dx-why">
@@ -482,10 +565,21 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
               {entry.badges.map((badge) => <BadgeChip key={badge.kind} badge={badge} locale={locale} />)}
             </ul>
           ) : null}
-          <p className="dx-tags">
-            <span className={`dx-tag dx-tag-${entry.source}`}>{sourceTag[entry.source]}</span>
-            {entry.track === "github" ? entry.labels.map((label) => <span key={label} className="dx-tag">{label}</span>) : null}
-          </p>
+          {entry.alsoWanted ? (
+            <p className="dx-also">
+              <Link href={entry.alsoWanted.href}>
+                {tx(locale, "Juga mencari", "Also looking for")}{" "}
+                <strong>{entry.alsoWanted.roles.slice(0, 2).join(", ")}</strong>
+                {entry.alsoWanted.roles.length > 2 ? ` +${entry.alsoWanted.roles.length - 2}` : ""}
+                <span aria-hidden="true"> →</span>
+              </Link>
+            </p>
+          ) : null}
+          {entry.track === "github" && entry.labels.length > 0 ? (
+            <p className="dx-tags">
+              {entry.labels.map((label) => <span key={label} className="dx-tag">{label}</span>)}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -494,6 +588,9 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
           entry.language ? <span className="dx-lang"><LanguageDot language={entry.language} />{entry.language}</span> : <span className="dx-muted">—</span>
         ) : (
           <span className="dx-roles">
+            {/* The column header says this on a wide table; a stacked card
+                has no header, so the chips would otherwise be unexplained. */}
+            <span className="dx-roles-label">{tx(locale, "Mencari:", "Looking for:")}</span>
             {entry.labels.slice(0, 2).map((label) => <span key={label} className="dx-role">{label}</span>)}
             {entry.labels.length > 2 ? <span className="dx-muted">+{entry.labels.length - 2}</span> : null}
           </span>
@@ -503,7 +600,15 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
       <div className="dx-cell-stars" role="cell">
         {/* Empty, not a dash, when GitHub has not answered: the cell then
             disappears from a stacked card instead of reading "★ —". */}
-        {entry.stars !== null ? compactNumber(entry.stars, locale) : null}
+        {entry.stars !== null ? (
+          <span
+            className="dx-stars"
+            title={tx(locale, `${entry.stars} bintang di GitHub`, `${entry.stars} stars on GitHub`)}
+          >
+            <span aria-hidden="true">★</span> {compactNumber(entry.stars, locale)}
+            <span className="sr-only">{tx(locale, " bintang di GitHub", " stars on GitHub")}</span>
+          </span>
+        ) : null}
       </div>
 
       <div className="dx-cell-action" role="cell">
@@ -513,7 +618,7 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
           </a>
         ) : (
           <Link className="dx-action" href={entry.actionHref}>
-            {tx(locale, "Lihat peran", "Roles")} <span aria-hidden="true">→</span>
+            {tx(locale, "Lihat peran", "See roles")} <span aria-hidden="true">→</span>
           </Link>
         )}
       </div>

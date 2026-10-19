@@ -16,6 +16,8 @@ import type {
 import { seedEvents, seedProjects, seedUsers } from "./seed";
 import type { Stage } from "./stages";
 import { SEED_REPOS, toOpenSourceRepo, type OpenSourceRepo } from "./open-source";
+import type { GitHubRepositoryStats } from "./github";
+import type { RepoActivity } from "./directory";
 import { githubHandle, isOssRelation, type OssContribution, type OssMember, type OssRelation } from "./oss";
 import type { Lane } from "./feed";
 import { COLLABORATION_KINDS, PROJECT_MEMORY_KINDS } from "./activity";
@@ -1886,6 +1888,61 @@ export async function listCatalogue(): Promise<OpenSourceRepo[]> {
     return [];
   }
   return toCatalogue(data ?? []);
+}
+
+/** What the directory knows about one repository on GitHub, from repo_signals. */
+export type RepoSignals = { stats: GitHubRepositoryStats | null; activity: RepoActivity };
+
+/** After this long without a successful check, "who gets merged" counts as unknown. */
+const SIGNALS_TRUSTED_DAYS = 3;
+
+/**
+ * Every listed repository's GitHub facts, keyed `owner/name` (lower-cased).
+ *
+ * Written by the refresh-repos Edge Function, so reading them costs one
+ * query and no GitHub request. Nothing in the app writes the table, so
+ * nothing calls updateTag for it: the `board` lifetime is how soon a refresh
+ * shows. The clock is read here, inside the cache, to decide whether a row is
+ * too old to vouch for "actively accepting" — a job that stopped running must
+ * not keep calling a repository active.
+ */
+export async function listRepoSignals(): Promise<Record<string, RepoSignals>> {
+  "use cache";
+  cacheLife("board");
+
+  const supabase = getPublicSupabase();
+  if (!supabase) return {};
+
+  const { data, error } = await supabase.from("repo_signals").select("*");
+  if (error) {
+    // A deploy ahead of 20261022000000_repo_signals.sql loses the numbers and
+    // the tiers fall back to "Accepting PRs"; the directory still lists.
+    console.warn(`[ahsan] Repository signals were skipped: ${error.message}`);
+    return {};
+  }
+
+  const trustedSince = Date.now() - SIGNALS_TRUSTED_DAYS * 86_400_000;
+  return Object.fromEntries(
+    (data ?? []).map((row) => {
+      const checkedAt = Date.parse(row.checked_at);
+      return [
+        row.repo,
+        {
+          stats:
+            row.stars === null
+              ? null
+              : {
+                  stars: row.stars,
+                  description: row.description,
+                  language: row.language,
+                  pushedAt: row.pushed_at ?? "",
+                  archived: row.archived,
+                },
+          activity: { outsidePRs: checkedAt >= trustedSince ? row.outside_prs : null, checkedAt },
+        },
+      ];
+    }),
+  );
 }
 
 /**

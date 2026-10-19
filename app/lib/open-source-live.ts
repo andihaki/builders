@@ -1,42 +1,37 @@
-import { cacheLife } from "next/cache";
-import { listCatalogue } from "./data";
-import { getGitHubRepositoryStats, type GitHubRepositoryStats } from "./github";
+import { listCatalogue, listRepoSignals, type RepoSignals } from "./data";
+import type { GitHubRepositoryStats } from "./github";
+import type { RepoActivity } from "./directory";
 import { repoSlug, type OpenSourceRepo } from "./open-source";
 
-export type LiveRepo = OpenSourceRepo & { stats: GitHubRepositoryStats | null };
+export type LiveRepo = OpenSourceRepo & { stats: GitHubRepositoryStats | null; activity: RepoActivity | null };
 
 /**
- * One repository's numbers from GitHub, cached for hours and shared by every
- * visitor.
- *
- * Cached per repository rather than with the catalogue, so approving a repo
- * on /admin shows it at once while its stars keep their longer life.
- * Unauthenticated, the GitHub API allows sixty requests an hour per address,
- * and a serverless function shares its address with strangers; `GITHUB_TOKEN`
- * (any read-only token) lifts that. A refused request costs that card its
- * numbers and nothing else.
+ * One repository's GitHub facts from the signals already read, or nothing
+ * yet — a repository listed since the last refresh simply shows no numbers
+ * and plain "Accepting PRs" until the Edge Function has been round.
  */
-async function repoStats(owner: string, repo: string): Promise<GitHubRepositoryStats | null> {
-  "use cache";
-  cacheLife("hours");
-
-  const stats = await getGitHubRepositoryStats(owner, repo, fetch, process.env.GITHUB_TOKEN ?? "");
-  if (!stats) console.warn(`[ahsan] GitHub numbers for ${owner}/${repo} were skipped.`);
-  return stats;
+export function signalsFor(signals: Record<string, RepoSignals>, owner: string, repo: string): RepoSignals | null {
+  return signals[`${owner}/${repo}`.toLowerCase()] ?? null;
 }
 
-/** The approved catalogue with GitHub's current numbers attached. */
-export async function listOpenSourceRepos(): Promise<LiveRepo[]> {
-  const catalogue = await listCatalogue();
-  const stats = await Promise.all(catalogue.map((repo) => repoStats(repo.owner, repo.repo)));
+/**
+ * The approved catalogue with GitHub's numbers attached — from the database,
+ * not from GitHub: see listRepoSignals and supabase/functions/refresh-repos.
+ */
+export async function listOpenSourceRepos(signals?: Record<string, RepoSignals>): Promise<LiveRepo[]> {
+  const [catalogue, known] = await Promise.all([listCatalogue(), signals ?? listRepoSignals()]);
 
-  return catalogue.map((repo, index) => ({
-    ...repo,
-    // The submitter's line wins; GitHub's description fills in when they
-    // left it empty.
-    summary: repo.summary || stats[index]?.description || "",
-    stats: stats[index],
-  }));
+  return catalogue.map((repo) => {
+    const found = signalsFor(known, repo.owner, repo.repo);
+    return {
+      ...repo,
+      // The submitter's line wins; GitHub's description fills in when they
+      // left it empty.
+      summary: repo.summary || found?.stats?.description || "",
+      stats: found?.stats ?? null,
+      activity: found?.activity ?? null,
+    };
+  });
 }
 
 export { repoSlug };

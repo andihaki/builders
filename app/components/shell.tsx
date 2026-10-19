@@ -8,6 +8,7 @@ import { currentViewer, type Viewer } from "../lib/session";
 import { countIncomingApplications, countUnseenNotices, isSiteAdmin } from "../lib/data";
 import { readPublicly } from "../lib/public-read";
 import { HeaderMenu } from "./header-menu";
+import { ThemeToggle } from "./theme-toggle";
 import { SignOutButton } from "./sign-out-button";
 import { Skeleton } from "./skeleton";
 import { currentLocale } from "../lib/locale-server";
@@ -194,6 +195,7 @@ async function VisitorHeader({
         <MainNav active={active} locale={locale} />
 
         <div className="header-actions">
+          <ThemeToggle />
           {viewer ? (
             <>
               <Link className="icon-button" href="/inbox" aria-label={inboxLabel(incoming, unseen, locale)}>
