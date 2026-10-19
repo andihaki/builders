@@ -43,3 +43,6 @@ next-env.d.ts
 
 # typescript
 *.tsbuildinfo
+
+# supabase cli (written by `supabase link`)
+supabase/.temp/
