@@ -5,7 +5,7 @@ import { SiteFooter, SiteHeader } from "../components/shell";
 import { RepoForm } from "../components/repo-form";
 import { SubmitButton } from "../components/submit-button";
 import { listMySubmissions } from "../lib/data";
-import { listLabel, repoSlug, repoUrl, statusLabel, type OpenSourceRepo } from "../lib/open-source";
+import { listLabel, reasonLabel, repoSlug, repoUrl, statusLabel, type OpenSourceRepo } from "../lib/open-source";
 import { readPublicly } from "../lib/public-read";
 import { currentViewer } from "../lib/session";
 import { signInPath } from "../lib/urls";
@@ -57,8 +57,8 @@ export default async function RecommendPage({
           <p>
             {tx(
               locale,
-              "Repo milikmu sendiri, atau repo orang lain yang menurutmu layak jadi tempat PR pertama. Admin akan mereview, lalu repo-nya muncul di direktori beserta alasanmu dan namamu.",
-              "One of your own, or somebody else's you think makes a good first PR. An admin reviews it, then it appears in the directory with your reason and your name.",
+              "Repo milikmu sendiri, atau repo orang lain yang menurutmu layak jadi tempat PR pertama. Admin akan mereview, lalu repo-nya muncul di direktori beserta alasan yang kamu pilih.",
+              "One of your own, or somebody else's you think makes a good first PR. An admin reviews it, then it appears in the directory with the reasons you picked.",
             )}
           </p>
         </header>
@@ -107,8 +107,9 @@ function MySubmission({ repo, locale }: { repo: OpenSourceRepo; locale: Locale }
         <a href={repoUrl(repo)} target="_blank" rel="noopener noreferrer">{repoSlug(repo)}</a>
         <span className={`adm-status adm-status-${repo.status}`}>{statusLabel(repo.status, locale)}</span>
         <span className="adm-list-tag">{listLabel(repo.list, locale)}</span>
+        {repo.reasons.map((reason) => <span key={reason} className="adm-list-tag">{reasonLabel(reason, locale)}</span>)}
       </div>
-      <p className="adm-why">{repo.why}</p>
+      {repo.why ? <p className="adm-why">{repo.why}</p> : null}
       {repo.status === "pending" ? (
         <form action={deleteRepo} className="adm-actions">
           <input type="hidden" name="id" value={repo.id} />

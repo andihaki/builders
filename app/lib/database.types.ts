@@ -314,8 +314,7 @@ export type Database = {
       };
       oss_repos: {
         Row: OssRepoRow;
-        Insert: Pick<OssRepoRow, "repo" | "why"> &
-          Partial<Omit<OssRepoRow, "id" | "repo" | "why" | "created_at">>;
+        Insert: Pick<OssRepoRow, "repo"> & Partial<Omit<OssRepoRow, "id" | "repo" | "created_at">>;
         // Only a site admin may update; the policy says so, not the type.
         Update: Partial<Omit<OssRepoRow, "id" | "repo" | "created_at" | "submitted_by">>;
       };

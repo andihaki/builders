@@ -25,11 +25,19 @@ export const REPO_LISTS = ["internal", "recommended"] as const;
 export type RepoList = (typeof REPO_LISTS)[number];
 
 /**
- * Why a repository earned its place, from a short closed set so the directory
- * can show it as a tag. The submission's `why` says the rest in words. Kept in
- * step with the `oss_repos_reasons` check constraint.
+ * Why a repository earned its place, from a closed set: the submitter picks
+ * one or more, and the directory shows them as tags. Chosen rather than typed
+ * so a card stays short and every reason reads the same way. Kept in step
+ * with the `oss_repos_reasons` check constraint.
  */
-export const REPO_REASONS = ["our-stack", "beginner-friendly", "local-impact"] as const;
+export const REPO_REASONS = [
+  "beginner-friendly",
+  "responsive-maintainers",
+  "easy-setup",
+  "learn-from",
+  "our-stack",
+  "local-impact",
+] as const;
 export type RepoReason = (typeof REPO_REASONS)[number];
 
 export const REPO_STATUSES = ["pending", "approved", "rejected"] as const;
@@ -81,8 +89,11 @@ export const SEED_REPOS: OpenSourceRepo[] = [
 ];
 
 const REASON_LABELS: Record<RepoReason, { id: string; en: string }> = {
-  "our-stack": { id: "Stack yang kami pakai", en: "Part of our stack" },
   "beginner-friendly": { id: "Ramah pemula", en: "Beginner friendly" },
+  "responsive-maintainers": { id: "Maintainer responsif", en: "Responsive maintainers" },
+  "easy-setup": { id: "Mudah di-setup", en: "Easy to set up" },
+  "learn-from": { id: "Bagus buat belajar", en: "Great to learn from" },
+  "our-stack": { id: "Stack yang kita pakai", en: "Part of our stack" },
   "local-impact": { id: "Berdampak lokal", en: "Local impact" },
 };
 
@@ -194,7 +205,7 @@ export type RepoSubmissionInput = {
 
 export type RepoSubmissionResult =
   | { ok: true; value: RepoSubmission }
-  | { ok: false; errors: Partial<Record<"repo" | "list" | "why" | "summary" | "starterLabel", string>> };
+  | { ok: false; errors: Partial<Record<"repo" | "list" | "reasons" | "why" | "summary" | "starterLabel", string>> };
 
 /**
  * A submission as it may be written, or a sentence per field saying why not.
@@ -203,8 +214,9 @@ export type RepoSubmissionResult =
  * as words rather than a constraint error.
  */
 export function validateRepoSubmission(input: RepoSubmissionInput, locale: Locale = "en"): RepoSubmissionResult {
-  const errors: Partial<Record<"repo" | "list" | "why" | "summary" | "starterLabel", string>> = {};
+  const errors: Partial<Record<"repo" | "list" | "reasons" | "why" | "summary" | "starterLabel", string>> = {};
   const repo = parseRepoRef(input.repo);
+  const reasons = [...new Set(input.reasons.filter(isRepoReason))];
   const why = input.why.trim().replace(/\s+/g, " ");
   const summary = input.summary.trim().replace(/\s+/g, " ");
   const starterLabel = input.starterLabel.trim() || "good first issue";
@@ -215,8 +227,13 @@ export function validateRepoSubmission(input: RepoSubmissionInput, locale: Local
   if (!isRepoList(input.list)) {
     errors.list = tx(locale, "Pilih: repo milik kita atau rekomendasi.", "Choose: one of ours, or a recommendation.");
   }
-  if (why.length < REPO_LIMITS.whyMin) {
-    errors.why = tx(locale, "Ceritakan alasannya, minimal satu kalimat pendek.", "Say why, in at least a short sentence.");
+  if (reasons.length === 0) {
+    errors.reasons = tx(locale, "Pilih minimal satu alasan.", "Pick at least one reason.");
+  }
+  // The reasons say why now; free text is optional, kept only for rows that
+  // already have it.
+  if (why && why.length < REPO_LIMITS.whyMin) {
+    errors.why = tx(locale, "Terlalu pendek.", "Too short.");
   } else if (why.length > REPO_LIMITS.why) {
     errors.why = tx(locale, `Maksimal ${REPO_LIMITS.why} karakter.`, `At most ${REPO_LIMITS.why} characters.`);
   }
@@ -233,7 +250,7 @@ export function validateRepoSubmission(input: RepoSubmissionInput, locale: Local
     value: {
       repo,
       list: input.list as RepoList,
-      reasons: [...new Set(input.reasons.filter(isRepoReason))],
+      reasons,
       why,
       summary,
       indonesian: input.indonesian,

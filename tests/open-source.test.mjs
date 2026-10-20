@@ -29,9 +29,9 @@ test("a submission is normalised: repo slug, known reasons once, tidy text, a de
 });
 
 test("a submission without a repo, a list, or a reason comes back with a sentence per field", () => {
-  const result = validateRepoSubmission(input({ repo: "not a repo", list: "ours", why: "bagus" }), "id");
+  const result = validateRepoSubmission(input({ repo: "not a repo", list: "ours", reasons: [], why: "bagus" }), "id");
   assert.equal(result.ok, false);
-  assert.deepEqual(Object.keys(result.errors).sort(), ["list", "repo", "why"]);
+  assert.deepEqual(Object.keys(result.errors).sort(), ["list", "reasons", "repo", "why"]);
 
   const long = validateRepoSubmission(input({ why: "x".repeat(281), summary: "y".repeat(161) }));
   assert.deepEqual(Object.keys(long.errors).sort(), ["summary", "why"]);
@@ -77,4 +77,13 @@ test("the starter link lands on the repo's labelled open issues", () => {
     new URL(starterIssuesUrl({ owner: "acme", repo: "tool", starterLabel: "" })).searchParams.get("q"),
     "is:issue is:open",
   );
+});
+
+test("reasons are what a submission needs now; the free text may be left out", () => {
+  const result = validateRepoSubmission(input({ why: "", reasons: ["responsive-maintainers", "easy-setup"] }));
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.value.reasons, ["responsive-maintainers", "easy-setup"]);
+  assert.equal(result.value.why, "");
+  // Only unknown reasons is the same as none.
+  assert.equal(validateRepoSubmission(input({ why: "", reasons: ["made-up"] })).ok, false);
 });

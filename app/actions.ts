@@ -85,7 +85,7 @@ export type LinkPreviewResult =
   | { ok: false; error: string };
 
 export type RepoFormState = {
-  errors: Partial<Record<"repo" | "list" | "why" | "summary" | "starterLabel" | "form", string>>;
+  errors: Partial<Record<"repo" | "list" | "reasons" | "why" | "summary" | "starterLabel" | "form", string>>;
   values: RepoSubmissionInput & { contributed: string };
 };
 
@@ -1409,7 +1409,6 @@ export async function saveRepo(_state: RepoFormState, formData: FormData): Promi
     repo: repo.repo,
     list: repo.list,
     reasons: repo.reasons,
-    why: repo.why,
     summary: repo.summary,
     indonesian: repo.indonesian,
     starter_label: repo.starterLabel,
@@ -1423,6 +1422,9 @@ export async function saveRepo(_state: RepoFormState, formData: FormData): Promi
   } else {
     const { error } = await supabase.from("oss_repos").insert({
       ...row,
+      // Reasons are picked from a list now; the old free-text column stays
+      // empty for new rows, and an edit leaves an old row's text alone.
+      why: repo.why,
       submitted_by: viewer.id,
       ...(mode === "add"
         ? { status: "approved", reviewed_by: viewer.id, reviewed_at: new Date().toISOString() }

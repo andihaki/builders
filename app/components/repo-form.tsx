@@ -2,14 +2,8 @@
 
 import { useActionState } from "react";
 import { saveRepo, type RepoFormState } from "../actions";
-import { REPO_LIMITS, REPO_REASONS, type RepoReason } from "../lib/open-source";
+import { REPO_LIMITS, REPO_REASONS, reasonLabel } from "../lib/open-source";
 import { useLanguage } from "./language-provider";
-
-const REASON_COPY: Record<RepoReason, [string, string]> = {
-  "our-stack": ["Stack yang kita pakai", "Part of our stack"],
-  "beginner-friendly": ["Ramah pemula", "Beginner friendly"],
-  "local-impact": ["Berdampak lokal", "Local impact"],
-};
 
 /**
  * The one form for putting a repository in the catalogue.
@@ -42,7 +36,7 @@ export function RepoForm({
     },
   } satisfies RepoFormState);
   const { errors, values } = state;
-  const { tx } = useLanguage();
+  const { tx, locale } = useLanguage();
   const field = (name: string) => `repo-${mode}-${name}`;
 
   return (
@@ -94,40 +88,24 @@ export function RepoForm({
         {errors.list ? <p className="rf-error" role="alert">{errors.list}</p> : null}
       </fieldset>
 
-      <div className={`rf-field ${errors.why ? "has-error" : ""}`}>
-        <label htmlFor={field("why")}>{tx("Kenapa layak dikontribusi?", "Why is it worth contributing to?")} <span aria-hidden="true">*</span></label>
-        <p className="rf-hint">
-          {tx(
-            "Alasanmu sendiri, tampil di direktori. Misal: \"Maintainer-nya responsif, isu pemulanya dilabeli rapi.\"",
-            "Your own reason, shown in the directory. For example: \"The maintainers reply quickly and label starter issues well.\"",
-          )}
-        </p>
-        <textarea
-          id={field("why")}
-          name="why"
-          rows={3}
-          defaultValue={values.why}
-          maxLength={REPO_LIMITS.why}
-          required
-          aria-invalid={errors.why ? true : undefined}
-        />
-        {errors.why ? <p className="rf-error" role="alert">{errors.why}</p> : null}
-      </div>
-
-      <fieldset className="rf-field">
-        <legend>{tx("Tanda", "Tags")}</legend>
+      {/* Why, as picks rather than prose: a card shows them as tags, and a
+          tag says it in two words where a sentence took two lines. */}
+      <fieldset className={`rf-field ${errors.reasons ? "has-error" : ""}`}>
+        <legend>{tx("Kenapa layak dikontribusi?", "Why is it worth contributing to?")} <span aria-hidden="true">*</span></legend>
+        <p className="rf-hint">{tx("Pilih satu atau lebih. Tampil sebagai tanda di direktori.", "Pick one or more. They show as tags in the directory.")}</p>
         <div className="rf-checks">
           {REPO_REASONS.map((reason) => (
             <label key={reason} className="rf-check">
               <input type="checkbox" name="reasons" value={reason} defaultChecked={values.reasons.includes(reason)} />
-              {tx(REASON_COPY[reason][0], REASON_COPY[reason][1])}
+              {reasonLabel(reason, locale)}
             </label>
           ))}
           <label className="rf-check">
             <input type="checkbox" name="indonesian" defaultChecked={values.indonesian} />
-            {tx("Maintainer-nya orang Indonesia", "Its maintainers are Indonesian")}
+            {tx("Maintainer orang Indonesia", "Indonesian maintainers")}
           </label>
         </div>
+        {errors.reasons ? <p className="rf-error" role="alert">{errors.reasons}</p> : null}
       </fieldset>
 
       {mode !== "edit" ? (

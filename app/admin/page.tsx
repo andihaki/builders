@@ -142,7 +142,7 @@ function AdminItem({ repo, locale }: { repo: OpenSourceRepo; locale: Locale }) {
         {repo.indonesian ? <span className="adm-list-tag">{tx(locale, "Maintainer Indonesia", "Indonesian maintainers")}</span> : null}
         {repo.reasons.map((reason) => <span key={reason} className="adm-list-tag">{reasonLabel(reason, locale)}</span>)}
       </div>
-      <p className="adm-why">{repo.why}</p>
+      {repo.why ? <p className="adm-why">{repo.why}</p> : null}
       {repo.summary ? <p className="adm-summary">{repo.summary}</p> : null}
       <p className="adm-meta">
         {repo.submittedBy ? (
