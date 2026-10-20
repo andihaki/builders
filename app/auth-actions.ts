@@ -1,13 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { requireSupabase } from "./lib/supabase";
 import { safeNextPath, startPath } from "./lib/urls";
-import { tags } from "./lib/cache-tags";
 import { siteOrigin } from "./lib/origin";
 import { currentLocale } from "./lib/locale-server";
 import { tx, type Locale } from "./lib/locale";
+import { forgetGitHubToken } from "./lib/github-token";
 
 export type AuthState = {
   error?: string;
@@ -16,53 +16,6 @@ export type AuthState = {
 };
 
 const MIN_PASSWORD = 8;
-
-export async function signUp(_state: AuthState, formData: FormData): Promise<AuthState> {
-  const locale = await currentLocale();
-  const email = text(formData, "email").toLowerCase();
-  const name = text(formData, "name");
-  const password = raw(formData, "password");
-  const confirm = raw(formData, "confirm");
-  const next = safeNextPath(text(formData, "next"));
-  const values = { email, name, next };
-
-  if (!email.includes("@")) return { error: tx(locale, "Masukkan alamat email yang valid.", "Enter a valid email address."), values };
-  if (name.length < 2) return { error: tx(locale, "Masukkan nama yang terdiri dari minimal dua huruf.", "Enter a name with at least two letters."), values };
-  if (password.length < MIN_PASSWORD) {
-    return { error: tx(locale, `Kata sandi harus terdiri dari minimal ${MIN_PASSWORD} karakter.`, `Your password must be at least ${MIN_PASSWORD} characters.`), values };
-  }
-  if (password !== confirm) return { error: tx(locale, "Konfirmasi kata sandi tidak cocok.", "The password confirmation does not match."), values };
-
-  const supabase = await requireSupabase();
-  const origin = await siteOrigin();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { name: name.slice(0, 80) },
-      emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}`,
-    },
-  });
-
-  if (error) return { error: translate(error.message, locale), values };
-
-  // A trigger creates the public profile alongside the auth user, so the people
-  // directory is now missing somebody. It is cached and shared, so it has to be
-  // told rather than left to notice on its own.
-  updateTag(tags.people);
-
-  // With email confirmation switched on there is no session yet, and the person
-  // has to open the link before they can do anything.
-  if (!data.session) {
-    return {
-      notice: tx(locale, `Kami telah mengirim tautan konfirmasi ke ${email}. Buka tautan tersebut untuk menyelesaikan pembuatan akun.`, `We sent a confirmation link to ${email}. Open it to finish creating your account.`),
-      values,
-    };
-  }
-
-  revalidatePath("/", "layout");
-  redirect(startPath(next));
-}
 
 export async function signIn(_state: AuthState, formData: FormData): Promise<AuthState> {
   const locale = await currentLocale();
@@ -152,6 +105,8 @@ export async function updatePassword(_state: AuthState, formData: FormData): Pro
 export async function signOut(): Promise<void> {
   const supabase = await requireSupabase();
   await supabase.auth.signOut();
+  // The GitHub token is theirs, not the browser's: it leaves with them.
+  await forgetGitHubToken();
 
   revalidatePath("/", "layout");
   redirect("/");

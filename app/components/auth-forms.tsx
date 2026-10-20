@@ -5,7 +5,6 @@ import { useActionState, useState } from "react";
 import {
   requestPasswordReset,
   signIn,
-  signUp,
   updatePassword,
   type AuthState,
 } from "../auth-actions";
@@ -22,8 +21,6 @@ export function SignInForm({ next }: { next: string }) {
       <Message state={state} />
       <input type="hidden" name="next" value={next} />
 
-      <GoogleButton next={next} />
-      <AuthDivider />
 
       <div className="auth-field">
         <label htmlFor="email">Email</label>
@@ -57,39 +54,6 @@ export function SignInForm({ next }: { next: string }) {
       <button className="primary-button auth-submit" type="submit" disabled={pending} aria-busy={pending || undefined}>
         <span>{pending ? tx("Mohon tunggu…", "Please wait…") : tx("Masuk dengan email", "Sign in with email")}</span>
         {!pending ? <span aria-hidden="true">→</span> : null}
-      </button>
-    </form>
-  );
-}
-
-export function SignUpForm({ next }: { next: string }) {
-  const [state, formAction, pending] = useActionState(signUp, EMPTY);
-  const { tx } = useLanguage();
-
-  return (
-    <form className="auth-form" action={formAction}>
-      <Message state={state} />
-      <input type="hidden" name="next" value={next} />
-
-      <GoogleButton next={next} />
-      <AuthDivider />
-
-      <label htmlFor="name">{tx("Nama", "Name")}</label>
-      <input id="name" name="name" type="text" autoComplete="name" required defaultValue={state.values.name} />
-      <p className="hint">{tx("Nama ini ditampilkan pada proyek dan profilmu.", "This name appears on your projects and profile.")}</p>
-
-      <label htmlFor="email">Email</label>
-      <input id="email" name="email" type="email" autoComplete="email" required defaultValue={state.values.email} />
-
-      <label htmlFor="password">{tx("Kata sandi", "Password")}</label>
-      <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} />
-      <p className="hint">{tx("Minimal 8 karakter.", "At least 8 characters.")}</p>
-
-      <label htmlFor="confirm">{tx("Ulangi kata sandi", "Repeat password")}</label>
-      <input id="confirm" name="confirm" type="password" autoComplete="new-password" required minLength={8} />
-
-      <button className="primary-button" type="submit" disabled={pending} aria-busy={pending || undefined}>
-        {pending ? tx("Mohon tunggu…", "Please wait…") : tx("Buat akun", "Create account")}
       </button>
     </form>
   );
@@ -161,19 +125,20 @@ export function NewPasswordForm() {
  * A link, not a submit button.
  *
  * Starting the sign-in has to hand the browser a cookie — the PKCE verifier —
- * on the same response that sends it to Google. That is what `/auth/google`
- * does. Going through a form action meant the verifier had to survive an action
+ * on the same response that sends it to the provider. That is what
+ * `/auth/google` and `/auth/github` do. Going through a form action meant the verifier had to survive an action
  * response and a client-side navigation off-site first, which is where it was
  * being lost. A link also works with JavaScript switched off.
  */
-function GoogleButton({ next }: { next: string }) {
+export function ProviderButton({ provider, next }: { provider: "google" | "github"; next: string }) {
   const { tx } = useLanguage();
   const [pending, setPending] = useState(false);
-  const href = next === "/" ? "/auth/google" : `/auth/google?next=${encodeURIComponent(next)}`;
+  const start = `/auth/${provider}`;
+  const href = next === "/" ? start : `${start}?next=${encodeURIComponent(next)}`;
 
   return (
     <a
-      className="google-auth-button"
+      className={`google-auth-button auth-provider-${provider}`}
       href={href}
       aria-busy={pending || undefined}
       aria-disabled={pending || undefined}
@@ -187,18 +152,15 @@ function GoogleButton({ next }: { next: string }) {
         setPending(true);
       }}
     >
-      {pending ? <span className="action-spinner" aria-hidden="true" /> : <GoogleMark />}
-      <span>{pending ? tx("Menghubungkan…", "Connecting…") : tx("Lanjutkan dengan Google", "Continue with Google")}</span>
+      {pending ? <span className="action-spinner" aria-hidden="true" /> : provider === "google" ? <GoogleMark /> : <GitHubMark />}
+      <span>
+        {pending
+          ? tx("Menghubungkan…", "Connecting…")
+          : provider === "google"
+            ? tx("Lanjutkan dengan Google", "Continue with Google")
+            : tx("Lanjutkan dengan GitHub", "Continue with GitHub")}
+      </span>
     </a>
-  );
-}
-
-function AuthDivider() {
-  const { tx } = useLanguage();
-  return (
-    <div className="auth-divider" aria-hidden="true">
-      <span>{tx("atau gunakan email", "or use email")}</span>
-    </div>
   );
 }
 
@@ -241,4 +203,15 @@ function Message({ state }: { state: AuthState }) {
     );
   }
   return null;
+}
+
+function GitHubMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19">
+      <path
+        fill="currentColor"
+        d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+      />
+    </svg>
+  );
 }

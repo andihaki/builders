@@ -3,20 +3,32 @@ import { getSupabase } from "../../lib/supabase";
 import { siteOrigin } from "../../lib/origin";
 import { sameOriginRedirect } from "../../lib/redirect";
 import { pinnedOrigin, safeNextPath, startPath } from "../../lib/urls";
+import { rememberGitHubToken } from "../../lib/github-token";
+import type { Supabase } from "../../lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 
-/** Exchanges Google's short-lived OAuth code for the session cookies used by the app. */
+/**
+ * Exchanges a provider's short-lived OAuth code — Google's or GitHub's — for
+ * the session cookies used by the app. `via` names the provider; it is set by
+ * `startOAuth` and only decides which failure to report and whether there is a
+ * GitHub token to keep.
+ */
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const next = safeNextPath(request.nextUrl.searchParams.get("next"));
+  const via = request.nextUrl.searchParams.get("via") === "github" ? "github" : "google";
   const supabase = await getSupabase();
 
   const failure = new URLSearchParams();
 
   if (code && supabase) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: exchanged, error } = await supabase.auth.exchangeCodeForSession(code);
     // Stay on this host. The session cookies were just written here, and a
     // redirect to any other name for the site would arrive without them.
-    if (!error) return sameOriginRedirect(startPath(next));
+    if (!error) {
+      if (via === "github") await keepGitHub(supabase, exchanged.session);
+      return sameOriginRedirect(startPath(next));
+    }
 
     // A code is single use, and a successful exchange clears the verifier it
     // was spent against. So the second visit to this URL — a refresh, a retry,
@@ -41,9 +53,9 @@ export async function GET(request: NextRequest) {
     // journey plausibly changed origin along the way — the cookie is written
     // where the sign-in started and read here.
     const missingVerifier = /code[ _]verifier/i.test(error.message);
-    failure.set("error", missingVerifier ? "origin-mismatch" : "google-failed");
+    failure.set("error", missingVerifier ? "origin-mismatch" : `${via}-failed`);
   } else {
-    failure.set("error", "google-failed");
+    failure.set("error", `${via}-failed`);
   }
 
   if (next !== "/") failure.set("next", next);
@@ -61,4 +73,26 @@ export async function GET(request: NextRequest) {
 function retry(path: string, wrongHost: boolean): NextResponse | Response {
   const pinned = wrongHost ? pinnedOrigin(process.env) : null;
   return pinned ? Response.redirect(new URL(path, pinned), 307) : sameOriginRedirect(path);
+}
+
+/**
+ * What a GitHub sign-in leaves behind besides the session: the token the Star
+ * button uses — Supabase hands it over here, once, and never again — and the
+ * person's GitHub handle on a profile that has none yet.
+ */
+async function keepGitHub(supabase: Supabase, session: Session | null): Promise<void> {
+  if (!session) return;
+  if (session.provider_token) await rememberGitHubToken(session.provider_token);
+
+  const identity = session.user.identities?.find((item) => item.provider === "github");
+  const handle = identity?.identity_data?.user_name;
+  if (typeof handle !== "string" || !/^[a-z\d](?:[a-z\d-]{0,38})$/i.test(handle)) return;
+
+  // Only fills an empty field: a handle somebody typed themselves wins.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ github: `https://github.com/${handle}` })
+    .eq("id", session.user.id)
+    .eq("github", "");
+  if (error) console.warn(`[ahsan] Could not record the GitHub handle: ${error.message}`);
 }
