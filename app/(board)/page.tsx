@@ -156,8 +156,8 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
             <p className="dx-head-community">
               {tx(
                 locale,
-                "Repo dan produk terkurasi dari WA Community kontributor swegrowth.",
-                "Repos and products curated in the swegrowth contributors WA Community.",
+                "Repo dan produk terkurasi dari komunitas kontributor swegrowth.",
+                "Repos and products curated in the swegrowth contributors community.",
               )}
               <br />
               {tx(
