@@ -1,6 +1,12 @@
 /** Canonical origin for metadata, share cards, and the sitemap. */
 export const siteUrl = "https://builders.swegrowth.id";
 
+/**
+ * The WhatsApp community where contributors share what they are working on.
+ * Empty hides the link everywhere it appears.
+ */
+export const waCommunityUrl = "https://chat.whatsapp.com/KPJDVO9A6RBLNa6HG2dQlF";
+
 /** The shared picture, for pages that do not draw a card of their own. */
 export const defaultShareImage = { url: "/opengraph-image", width: 1200, height: 630 };
 

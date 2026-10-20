@@ -1,8 +1,9 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import React, { Suspense } from "react";
 import Form from "next/form";
 import Link from "@/app/components/responsive-link";
-import { shareCard } from "../content";
+import { shareCard, waCommunityUrl } from "../content";
 import { SiteFooter, SiteHeader } from "../components/shell";
 import { Skeleton } from "../components/skeleton";
 import { listOssMembers, listProjects, listRepoSignals } from "../lib/data";
@@ -152,12 +153,30 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
         <header className="dx-head">
           <div>
             <h1>{tx(locale, "Direktori kontribusi", "Contribution directory")}</h1>
-            <p>
+            <p className="dx-head-community">
+              {tx(locale, "Repo dan produk terkurasi dari ", "Repos and products curated in the ")}
+              {waCommunityUrl ? (
+                <a href={waCommunityUrl} target="_blank" rel="noopener noreferrer">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.6-2-1-1 .8a4 4 0 0 1-1.7-1.7l.8-1-1-2z" />
+                  </svg>
+                  {tx(locale, "WA builder @SWEGrowth", "@SWEGrowth builder WA")}
+                </a>
+              ) : (
+                tx(locale, "builder @SWEGrowth", "@SWEGrowth builders")
+              )}
+              .{" "}
               {tx(
                 locale,
-                "Project open source dan produk builders yang sedang menerima kontributor.",
-                "Open source projects and builders' products that are taking contributors right now.",
+                "Gabung untuk update dan berbagi tentang kontribusi di Open Source.",
+                "Join for updates and to share your open source contributions.",
               )}
+            </p>
+            <p className="dx-head-powered">
+              Powered by
+              <a href="https://swegrowth.id/" target="_blank" rel="noopener noreferrer">
+                <Image src="/swegrowth-logo.png" alt="Software Engineer Growth Community" width={25} height={24} />
+              </a>
             </p>
           </div>
         </header>
@@ -236,6 +255,9 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
         {DIRECTORY_TRACKS.map((track) => (
           <Link
             key={track}
+            // Runtime prefetch: the other tab's list is rendered ahead of the
+            // click from the cached reads, so switching tabs is instant.
+            prefetch={true}
             className={filters.track === track ? "is-active" : ""}
             aria-current={filters.track === track ? "page" : undefined}
             href={pathFor({ track, source: "", badge: "", facet: "", q: filters.q })}
@@ -252,6 +274,7 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
           {DIRECTORY_TRACKS.map((track) => (
             <FacetLink
               key={track}
+              prefetch
               active={filters.track === track}
               href={pathFor({ track, source: "", badge: "", facet: "", q: filters.q })}
               count={entries.filter((entry) => entry.track === track).length}
@@ -480,6 +503,7 @@ function FacetLink({
   count,
   icon,
   note,
+  prefetch,
   children,
 }: {
   active: boolean;
@@ -487,11 +511,18 @@ function FacetLink({
   count: number;
   icon?: React.ReactNode;
   note?: string;
+  /** Prefetch this link's results ahead of the click — for the two tabs. */
+  prefetch?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <li>
-      <Link className={`dx-facet-link ${active ? "is-active" : ""}`} aria-current={active ? "true" : undefined} href={href}>
+      <Link
+        className={`dx-facet-link ${active ? "is-active" : ""}`}
+        aria-current={active ? "true" : undefined}
+        href={href}
+        prefetch={prefetch ? true : undefined}
+      >
         {icon}
         <span className="dx-facet-label">
           {children}

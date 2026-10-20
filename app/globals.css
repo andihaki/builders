@@ -3618,10 +3618,17 @@ form button[aria-busy="true"]::after,
 
 .dx-head {
   align-items: flex-end; border-bottom: 1px solid var(--dx-line); display: flex; gap: 20px;
-  justify-content: space-between; padding-bottom: 22px;
+  justify-content: center; padding-bottom: 22px; text-align: center;
 }
+.dx-head > div { max-width: 640px; }
 .dx-head h1 { font-size: 26px; font-weight: 650; letter-spacing: -.03em; line-height: 1.15; margin: 0; }
 .dx-head p { color: var(--dx-muted); font-size: 14px; margin: 6px 0 0; }
+.dx-head p.dx-head-community { line-height: 1.6; }
+.dx-head p.dx-head-powered { align-items: center; display: flex; justify-content: center; font-size: 11px; gap: 6px; margin-top: 6px; }
+.dx-head-powered a { display: inline-flex; }
+.dx-head-powered img { border-radius: 5px; display: block; }
+.dx-head-community svg { display: inline-block; fill: none; height: 15px; margin-right: 4px; vertical-align: -2px; stroke: light-dark(#25a244, #60c46f); stroke-linejoin: round; stroke-width: 1.7; width: 15px; }
+.dx-head-community a { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: #25a244; text-underline-offset: 3px; }
 
 .dx-layout { align-items: start; display: grid; gap: 40px; grid-template-columns: 232px minmax(0, 1fr); padding-top: 24px; }
 .dx-mtabs { display: none; }
@@ -3845,7 +3852,12 @@ form button[aria-busy="true"]::after,
   .dx-layout { gap: 18px; grid-template-columns: minmax(0, 1fr); padding-top: 16px; }
   /* On a phone the sidebar folds behind a bar — what is applied, and a
      Filter button — and opens as a full-height sheet, as GitHub's does. */
-  .dx-filterbar { align-items: center; display: flex; gap: 8px; min-width: 0; }
+  /* Stays pinned under the header while the list scrolls, so the filters are
+     one tap away from anywhere in it. Full-bleed, so cards slide under it. */
+  .dx-filterbar {
+    align-items: center; background: light-dark(#fff, #1f1f1f); border-bottom: 1px solid var(--dx-line); display: flex; gap: 8px;
+    margin: 0 calc(-1 * var(--gutter)); min-width: 0; padding: 8px var(--gutter); position: sticky; top: var(--header-h); z-index: 30;
+  }
   .dx-filterbar-label { color: var(--dx-muted); flex: none; font-size: 14px; }
   .dx-filterbar-none { color: var(--dx-text); font-size: 14px; font-weight: 600; }
   .dx-filterbar-chips { display: flex; flex: 1; gap: 6px; list-style: none; margin: 0; min-width: 0; overflow-x: auto; padding: 0; scrollbar-width: none; }
@@ -3902,7 +3914,7 @@ form button[aria-busy="true"]::after,
 }
 @media (max-width: 640px) {
   .dx-page { padding-top: 22px; }
-  .dx-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-bottom: 16px; }
+  .dx-head { align-items: center; flex-direction: column; gap: 12px; padding-bottom: 16px; }
   .dx-head h1 { font-size: 22px; }
   .dx-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
   .dx-search { max-width: none; }
@@ -3931,7 +3943,10 @@ form button[aria-busy="true"]::after,
   /* Pinned to the corner rather than given a column, so only the name line
      makes room for it and everything below keeps the card's full width. */
   .dx-table-github .dx-row:not(.dx-row-head) { position: relative; }
-  .dx-table-github .dx-row:not(.dx-row-head) .dx-cell-action { position: absolute; right: 14px; top: 11px; }
+  /* Its column is the grid's last, so `right: 0` already sits on the card's
+     padding — the same inset as the avatar on the left — and `top` centres it
+     on the avatar's row. */
+  .dx-table-github .dx-row:not(.dx-row-head) .dx-cell-action { position: absolute; right: 0; top: 15px; }
   .dx-table-github .dx-name > a { flex: 1 0 100%; padding-right: 84px; }
   .dx-table-github .dx-star { height: 30px; }
 }
