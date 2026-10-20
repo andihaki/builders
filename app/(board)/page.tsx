@@ -160,10 +160,10 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.6-2-1-1 .8a4 4 0 0 1-1.7-1.7l.8-1-1-2z" />
                   </svg>
-                  {tx(locale, "WA builder @SWEGrowth", "@SWEGrowth builder WA")}
+                  {tx(locale, "WA Community builder @swegrowth", "@swegrowth builder WA Community")}
                 </a>
               ) : (
-                tx(locale, "builder @SWEGrowth", "@SWEGrowth builders")
+                tx(locale, "builder @swegrowth", "@swegrowth builders")
               )}
               .
               <br />
