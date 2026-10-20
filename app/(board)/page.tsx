@@ -165,7 +165,8 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               ) : (
                 tx(locale, "builder @SWEGrowth", "@SWEGrowth builders")
               )}
-              .{" "}
+              .
+              <br />
               {tx(
                 locale,
                 "Gabung untuk update dan berbagi tentang kontribusi di Open Source.",
