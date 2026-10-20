@@ -3631,7 +3631,12 @@ form button[aria-busy="true"]::after,
   height: 32px; padding: 0 14px;
 }
 .dx-wa-cta:hover { background: light-dark(#1a7f37, #2ea043); }
-.dx-wa-cta svg { fill: currentColor; height: 15px; width: 15px; }
+/* WhatsApp's own logo, the file from Meta's brand resources via Simple
+   Icons (public/whatsapp.svg), painted in the button's text colour. */
+.dx-wa-icon {
+  background: currentColor; flex: none; height: 16px; width: 16px;
+  mask: url("/whatsapp.svg") center / contain no-repeat;
+}
 .dx-head-powered a { display: inline-flex; }
 .dx-head-powered img { border-radius: 5px; display: block; }
 .dx-head-stats { display: flex; flex: none; gap: 28px; margin: 0; }
