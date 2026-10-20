@@ -154,16 +154,16 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
           <div>
             <h1>{tx(locale, "Direktori kontribusi", "Contribution directory")}</h1>
             <p className="dx-head-community">
-              {tx(
-                locale,
-                "Repo dan produk terkurasi dari komunitas kontributor swegrowth.",
-                "Repos and products curated in the swegrowth contributors community.",
-              )}
-              <br />
-              {tx(
-                locale,
-                "Gabung untuk update dan berbagi project pilihanmu.",
-                "Join for updates and to share your preferred projects.",
+              {locale === "id" ? (
+                <>
+                  Repo dan produk terkurasi dari <Link href="/about">komunitas builder dan kontributor swegrowth</Link>. Gabung untuk update
+                  dan berbagi project pilihanmu.
+                </>
+              ) : (
+                <>
+                  Repos and products curated in the <Link href="/about">swegrowth builders and contributors community</Link>. Join for updates
+                  and to share your preferred projects.
+                </>
               )}
             </p>
             <div className="dx-head-actions">
