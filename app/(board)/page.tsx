@@ -154,18 +154,11 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
           <div>
             <h1>{tx(locale, "Direktori kontribusi", "Contribution directory")}</h1>
             <p className="dx-head-community">
-              {tx(locale, "Repo dan produk terkurasi dari ", "Repos and products curated in the ")}
-              {waCommunityUrl ? (
-                <a href={waCommunityUrl} target="_blank" rel="noopener noreferrer">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.6-2-1-1 .8a4 4 0 0 1-1.7-1.7l.8-1-1-2z" />
-                  </svg>
-                  {tx(locale, "WA Community builder @swegrowth", "@swegrowth builder WA Community")}
-                </a>
-              ) : (
-                tx(locale, "builder @swegrowth", "@swegrowth builders")
+              {tx(
+                locale,
+                "Repo dan produk terkurasi dari WA Community builder @swegrowth.",
+                "Repos and products curated in the @swegrowth builder WA Community.",
               )}
-              .
               <br />
               {tx(
                 locale,
@@ -173,12 +166,22 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
                 "Join for updates and to share your open source contributions.",
               )}
             </p>
-            <p className="dx-head-powered">
-              Powered by
-              <a href="https://swegrowth.id/" target="_blank" rel="noopener noreferrer">
-                <Image src="/swegrowth-logo.png" alt="Software Engineer Growth Community" width={25} height={24} />
-              </a>
-            </p>
+            <div className="dx-head-actions">
+              {waCommunityUrl ? (
+                <a className="dx-wa-cta" href={waCommunityUrl} target="_blank" rel="noopener noreferrer">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.6-2-1-1 .8a4 4 0 0 1-1.7-1.7l.8-1-1-2z" />
+                  </svg>
+                  {tx(locale, "Gabung Grup WA", "Join WA Group")}
+                </a>
+              ) : null}
+              <p className="dx-head-powered">
+                Powered by
+                <a href="https://swegrowth.id/" target="_blank" rel="noopener noreferrer">
+                  <Image src="/swegrowth-logo.png" alt="Software Engineer Growth Community" width={25} height={24} />
+                </a>
+              </p>
+            </div>
           </div>
           <Suspense fallback={null}>
             <HeadStats locale={locale} />
