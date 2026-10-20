@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
   // URLs before a Server Component starts streaming, so bookmarks and shared
   // links land on the real collaboration page with an actual HTTP redirect.
   if (request.nextUrl.pathname === "/") {
-    const boardKeys = ["stage", "lane", "tag", "role", "q", "cari", "needs"];
+    // Not `q`: the directory that replaced the board searches with it, and an
+    // old `/?q=` link is a search either way.
+    const boardKeys = ["stage", "lane", "tag", "role", "cari", "needs"];
     if (boardKeys.some((key) => request.nextUrl.searchParams.has(key))) {
       return sameOriginRedirect(`/explore${request.nextUrl.search}`, browserOrigin(request));
     }

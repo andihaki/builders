@@ -4,6 +4,7 @@ import { Arrow, SiteFooter, SiteHeader } from "../components/shell";
 import { shareCard } from "../content";
 import { currentLocale } from "../lib/locale-server";
 import { tx } from "../lib/locale";
+import { prTierLabel, type PRTier } from "../lib/directory";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
@@ -72,6 +73,39 @@ const ROLES: readonly (readonly [string, string, string, string])[] = [
   ],
 ];
 
+/**
+ * What each PR status on a directory card means — the same tiers, in the same
+ * order and words, as `prTierLabel` in app/lib/directory.ts. Written out here
+ * because "what does this colour mean?" is the first question a card raises.
+ */
+const TIERS: readonly (readonly [PRTier, string, string])[] = [
+  [
+    "active",
+    "Ada PR dari luar tim yang di-merge dalam 90 hari terakhir. Paling besar kemungkinan PR pertamamu dibaca dan diterima.",
+    "A pull request from outside the team was merged in the last 90 days. The best odds that your first PR is read and accepted.",
+  ],
+  [
+    "first",
+    "Pemiliknya sudah buka pintu buat PR dan repo-nya masih aktif, tapi belum ada orang luar yang di-merge. Kamu bisa jadi yang pertama.",
+    "The owner has opened it to pull requests and the repo is alive, but nobody from outside has been merged yet. You could be the first.",
+  ],
+  [
+    "open",
+    "Pemiliknya terbuka buat PR, tapi GitHub belum sempat kami tanya soal siapa saja yang di-merge.",
+    "The owner takes pull requests, but we have not heard back from GitHub yet about who gets merged.",
+  ],
+  [
+    "unopened",
+    "Kodenya bisa dibaca dan dipelajari, tapi pemiliknya belum bilang siap nerima PR. Tanya dulu sebelum ngirim.",
+    "The code is there to read and learn from, but the owner has not said they take PRs. Ask before sending one.",
+  ],
+  [
+    "inactive",
+    "Repo-nya di-archive, atau nggak ada push selama 120 hari. PR ke sini kemungkinan besar nggak ada yang baca.",
+    "The repo is archived, or nothing has been pushed for 120 days. A PR here will most likely go unread.",
+  ],
+];
+
 const BENEFITS: readonly (readonly [string, string, string, string])[] = [
   [
     "Jadi web portfolio pribadi",
@@ -135,6 +169,18 @@ const FAQ: readonly (readonly [string, string, string, string])[] = [
     "My community wants to be a community partner. How?",
     "Hubungi lewat kontak di profil ini. Ceritain komunitasmu dan member-nya siapa aja—sisanya kita obrolin bareng.",
     "Reach out through the contact links on this profile. Tell us about your community and who your members are—we will work out the rest together.",
+  ],
+  [
+    "Repo yang saya tahu belum ada. Bisa diusulin?",
+    "A repo I know is missing. Can I suggest it?",
+    "Bisa. Klik “Usulkan project”, pilih “Repo open source”, lalu pilih alasan kenapa repo itu layak. Setelah dicek admin, repo-nya masuk direktori.",
+    "Yes. Press “Suggest a project”, choose “An open source repo”, and pick why it belongs. Once an admin has checked it, the repo joins the directory.",
+  ],
+  [
+    "Kenapa masuknya pakai GitHub?",
+    "Why sign in with GitHub?",
+    "Karena kebanyakan yang datang ke sini mau kontribusi kode, dan dengan GitHub kamu bisa kasih bintang ke repo langsung dari direktori. Izin yang diminta cuma email dan memberi bintang—nggak bisa nyentuh kode atau repo-mu. Lebih suka Google? Tautannya ada di bawah tombol GitHub.",
+    "Because most people here come to contribute code, and with GitHub you can star repos straight from the directory. It asks only for your email and permission to star—nothing that can touch your code or repositories. Prefer Google? The link is just below the GitHub button.",
   ],
   [
     "Berbayar?",
@@ -209,6 +255,95 @@ export default async function AboutPage() {
           </div>
         </section>
 
+        <section className="how-section" aria-labelledby="directory-title">
+          <h2 id="directory-title">{tx(locale, "Cara pakai direktorinya.", "How the directory works.")}</h2>
+          <p className="about-lead">
+            {tx(
+              locale,
+              "Halaman depan Builders adalah direktori project yang lagi nerima kontributor. Ada dua jalur, dan kamu tinggal pilih yang paling cocok sama keahlianmu.",
+              "Builders' front page is a directory of projects taking contributors right now. There are two paths; pick the one that fits what you do.",
+            )}
+          </p>
+
+          <ol className="how-list">
+            <li>
+              <span>01</span>
+              <div>
+                <h3>{tx(locale, "Kode di GitHub", "Code on GitHub")}</h3>
+                <p>
+                  {tx(
+                    locale,
+                    "Repo open source—usulan komunitas, rekomendasi, dan produk member yang punya repo GitHub. Tiap kartu nunjukin bahasa, jumlah bintang, isu pemula, dan status PR-nya, jadi kamu tahu mana yang paling mungkin nerima PR pertamamu.",
+                    "Open source repositories—community suggestions, recommendations, and members' products with a GitHub repo. Each card shows the language, stars, starter issues, and PR status, so you know which is most likely to take your first PR.",
+                  )}
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <h3>{tx(locale, "Peran lain", "Other roles")}</h3>
+                <p>
+                  {tx(
+                    locale,
+                    "Produk member yang lagi cari desainer, PM, peneliti, marketing, QA, dan peran lain. Klik “Ajukan diri”, pilih perannya, dan pemilik project yang memutuskan.",
+                    "Members' products looking for designers, PMs, researchers, marketers, QA, and more. Press “Offer to help”, pick the role, and the project's owner decides.",
+                  )}
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <h3 className="about-subhead">{tx(locale, "Arti status PR", "What the PR status means")}</h3>
+          <p className="about-lead">
+            {tx(
+              locale,
+              "Bukan sekadar centang dari pemiliknya. Status ini dihitung dari GitHub dan diperbarui tiap beberapa jam.",
+              "Not just a box the owner ticked. It is worked out from GitHub and refreshed every few hours.",
+            )}
+          </p>
+          <ul className="about-tiers">
+            {TIERS.map(([tier, bodyId, bodyEn]) => (
+              <li key={tier}>
+                <span className={`dx-tier-dot dx-tier-dot-${tier}`} aria-hidden="true" />
+                <div>
+                  <strong>{prTierLabel(tier, locale)}</strong>
+                  <p>{tx(locale, bodyId, bodyEn)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="about-subhead">{tx(locale, "Tanda di kartu", "The signs on a card")}</h3>
+          <ul className="about-tiers">
+            <li>
+              <span className="about-sign" aria-hidden="true">✓</span>
+              <div>
+                <strong>{tx(locale, "Teman kita pernah kontribusi", "Friends have contributed")}</strong>
+                <p>{tx(locale, "Ada member Builders yang PR-nya pernah masuk ke sini. Kamu bisa tanya-tanya ke mereka dulu.", "A Builders member has landed a PR here before. You can ask them first.")}</p>
+              </div>
+            </li>
+            <li>
+              <span className="about-sign" aria-hidden="true">●</span>
+              <div>
+                <strong>{tx(locale, "Ada di grup kita", "In our group")}</strong>
+                <p>{tx(locale, "Maintainer-nya ada di komunitas kita, jadi PR pertamamu dibaca orang yang kenal kamu.", "The maintainer is in our community, so your first PR is read by someone who knows you.")}</p>
+              </div>
+            </li>
+            <li>
+              <span className="about-sign" aria-hidden="true">☆</span>
+              <div>
+                <strong>Star</strong>
+                <p>{tx(locale, "Kasih bintang langsung dari direktori, persis seperti di GitHub. Cukup masuk dengan GitHub sekali.", "Star a repo straight from the directory, just like on GitHub. Sign in with GitHub once.")}</p>
+              </div>
+            </li>
+          </ul>
+
+          <Link className="landing-inline-link" href="/">
+            {tx(locale, "Buka direktorinya", "Open the directory")} <Arrow />
+          </Link>
+        </section>
+
         <section className="how-section" aria-labelledby="roles-title">
           <h2 id="roles-title">{tx(locale, "Kontribusi nggak cuma soal kode.", "Contribution is not only about code.")}</h2>
           <p className="about-lead">
@@ -231,8 +366,8 @@ export default async function AboutPage() {
             ))}
           </ol>
 
-          <Link className="landing-inline-link" href="/explore">
-            {tx(locale, "Cari project buat dikontribusiin", "Find a project to contribute to")} <Arrow />
+          <Link className="landing-inline-link" href="/?track=role">
+            {tx(locale, "Lihat project yang lagi cari peran lain", "See projects looking for other roles")} <Arrow />
           </Link>
         </section>
 
@@ -294,13 +429,13 @@ export default async function AboutPage() {
           <p>
             {tx(
               locale,
-              "Tambah projectmu, atau ajak komunitasmu jadi community partner.",
-              "Add your project, or bring your community in as a partner.",
+              "Usulkan projectmu atau repo yang layak dikontribusiin, atau ajak komunitasmu jadi community partner.",
+              "Suggest your project or a repo worth contributing to, or bring your community in as a partner.",
             )}
           </p>
           <div>
-            <Link className="home-hero-primary" href="/new">
-              <span aria-hidden="true">+</span> {tx(locale, "Tambah proyek", "Add a project")}
+            <Link className="home-hero-primary" href="/submit">
+              <span aria-hidden="true">+</span> {tx(locale, "Usulkan project", "Suggest a project")}
             </Link>
             <Link className="landing-final-secondary" href={CONTACT_PATH}>
               {tx(locale, "Jadi community partner", "Become a community partner")} <Arrow />

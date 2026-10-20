@@ -27,7 +27,7 @@ import { dirname, resolve } from "node:path";
 const FILE = resolve(dirname(fileURLToPath(import.meta.url)), "..", "app", "globals.css");
 
 /** sRGB 0–255 → OKLab. */
-function toOklab([r, g, b]) {
+export function toOklab([r, g, b]) {
   const lin = (c) => {
     c /= 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -44,7 +44,7 @@ function toOklab([r, g, b]) {
 }
 
 /** OKLab → sRGB 0–255, or null when it falls outside sRGB. */
-function fromOklab([L, a, b]) {
+export function fromOklab([L, a, b]) {
   const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
   const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
   const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
@@ -93,7 +93,7 @@ export function darkPartner(literal, property) {
 
   // Hairlines have to stay visible against the dark paper they now sit on.
   const lifted = /border|outline|line/.test(property) ? Math.max(turnOver(L), 0.32) : turnOver(L);
-  return format({ rgb: inGamut(lifted, a, b), alpha });
+  return format({ rgb: inGamut(soften(lifted), a, b), alpha });
 }
 
 /**
@@ -112,6 +112,21 @@ const CURVE = [
   [0.965, 0.17],
   [1, 0.215],
 ];
+
+/**
+ * How far the darkest surfaces are lifted off black, fading to nothing by
+ * mid-grey: a soft dark, like GitHub's "dimmed", rather than near-black. Text
+ * and anything brighter than SOFT_UNTIL is left exactly where it was, so the
+ * contrast that matters most barely moves.
+ */
+const SOFT_LIFT = 0.03;
+const SOFT_FROM = 0.17;
+const SOFT_UNTIL = 0.6;
+
+export function soften(L) {
+  const t = Math.min(1, Math.max(0, (L - SOFT_FROM) / (SOFT_UNTIL - SOFT_FROM)));
+  return L + SOFT_LIFT * (1 - t);
+}
 
 function turnOver(L) {
   for (let i = 1; i < CURVE.length; i += 1) {

@@ -6,6 +6,7 @@ import {
   directoryFacets,
   filterDirectory,
   openingCounts,
+  paginate,
   prTier,
   prTierCounts,
   productEntries,
@@ -118,7 +119,6 @@ test("a product's code-path row carries GitHub's details and its name opens the 
   );
   assert.equal(entry.href, "https://github.com/ana/tool");
   assert.deepEqual(entry.links.map((link) => link.label), ["ana/tool"]);
-  assert.deepEqual(entry.alsoWanted, { roles: ["DESIGN"], href: "/projects/tool?tab=collaboration#help-heading" });
   assert.equal(entry.language, "TypeScript");
   assert.equal(entry.stars, 42);
   assert.equal(entry.description, "Does a thing");
@@ -126,7 +126,6 @@ test("a product's code-path row carries GitHub's details and its name opens the 
   // The role-path row of the same product still opens its page here.
   const [, role] = productEntries(product({ repoUrl: "https://github.com/ana/tool", openSeatCount: 1, openRoles: ["design"] }), describe, roleName, "en");
   assert.equal(role.href, "/projects/tool");
-  assert.equal(role.alsoWanted, undefined);
   // It still shows where the code lives, as a link with GitHub's mark.
   assert.deepEqual(role.links, [{ kind: "github", href: "https://github.com/ana/tool", label: "ana/tool" }]);
 
@@ -325,4 +324,16 @@ test("members' records reach a repo's row through the directory", () => {
   const members = [{ username: "ana", name: "Ana", handle: "ana", contributions: [{ repo: "vercel/next.js", relation: "contributor" }] }];
   const badge = repoEntry(next, "en", members).badges.find((entry) => entry.kind === "friend-contributed");
   assert.deepEqual(badge, { kind: "friend-contributed", people: ["ana"], count: 1, profiles: ["ana"] });
+});
+
+test("paginate slices by page and clamps pages that do not exist", () => {
+  const items = Array.from({ length: 45 }, (_, index) => index);
+  assert.deepEqual(paginate(items, 1, 20), { items: items.slice(0, 20), page: 1, pages: 3 });
+  assert.deepEqual(paginate(items, "3", 20).items, [40, 41, 42, 43, 44]);
+  // An old link past the end lands on the last page, not an empty one.
+  assert.equal(paginate(items, "9", 20).page, 3);
+  // Nonsense lands on the first.
+  for (const junk of ["", "0", "-2", "abc", "1.5"]) assert.equal(paginate(items, junk, 20).page, 1);
+  // An empty list is still one (empty) page.
+  assert.deepEqual(paginate([], "2", 20), { items: [], page: 1, pages: 1 });
 });

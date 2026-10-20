@@ -59,11 +59,6 @@ export type DirectoryEntry = {
   website: string;
   /** Where else it lives — its repository and its website — each with an icon. */
   links: DirectoryLink[];
-  /**
-   * On the code path, the roles a product is also asking for: somebody who
-   * came for code learns the same product needs a designer too.
-   */
-  alsoWanted?: { roles: string[]; href: string };
   description: string;
   /** A catalogue repo's reason for being listed, in its submitter's words. */
   why?: string;
@@ -85,6 +80,10 @@ export type DirectoryEntry = {
   badges: Badge[];
   language: string;
   stars: number | null;
+  /** When GitHub last saw a push — the card's "Updated …". Null when unknown. */
+  updatedAt: string | null;
+  /** Its GitHub repository as `owner/name`, lower-cased — what the Star button stars. Null without one. */
+  repo: string | null;
   /** Where the name links — the repo, or the product's page here. */
   href: string;
   /** The one action that matters on this path. */
@@ -211,6 +210,8 @@ export function repoEntry(
     badges: mergeBadges(repoBadges(repo), memberBadges(`${repo.owner}/${repo.repo}`, members)),
     language: repo.stats?.language ?? "",
     stars: repo.stats ? repo.stats.stars : null,
+    updatedAt: repo.stats?.pushedAt ?? null,
+    repo: `${repo.owner}/${repo.repo}`.toLowerCase(),
     href: repoUrl(repo),
     actionHref: open ? starterIssuesUrl(repo) : repoUrl(repo),
     actionLabel: open ? tx(locale, "Isu pemula di GitHub", "Starter issues on GitHub") : tx(locale, "Lihat repo", "View repo"),
@@ -258,6 +259,8 @@ export function productEntries<P extends DirectoryProduct>(
     description: describe(project),
     language: "",
     stars: null,
+    updatedAt: null,
+    repo: repository ? `${repository.owner}/${repository.repo}`.toLowerCase() : null,
     href: page,
     // A filled seat is somebody from here who already joined: the product's
     // own "a friend has been here", counted rather than named.
@@ -276,10 +279,10 @@ export function productEntries<P extends DirectoryProduct>(
       ...base,
       key: `product:${project.id}:github`,
       track: "github",
-      alsoWanted: project.openSeatCount > 0 ? { roles: project.openRoles.map(roleName), href: rolesHref } : undefined,
       description: base.description || stats?.description || "",
       language: stats?.language ?? "",
       stars: stats ? stats.stars : null,
+      updatedAt: stats?.pushedAt ?? null,
       href: repository.url,
       labels: [],
       actionHref: welcomesPRs ? `${repository.url}/issues` : repository.url,
@@ -343,6 +346,23 @@ function facetsOf(entry: DirectoryEntry): string[] {
  * are ranked by PR tier — merging outsiders first, not taking PRs last — and
  * within a tier, and on the role path, the order is kept as the caller built it.
  */
+/** How many cards one page of the directory shows. */
+export const PAGE_SIZE = 20;
+
+export type DirectoryPage<T> = { items: T[]; page: number; pages: number };
+
+/**
+ * One page of `items`, counted from 1. A page past the end — an old link to a
+ * list that has since shrunk — lands on the last page rather than an empty
+ * one; anything that is not a whole number lands on the first.
+ */
+export function paginate<T>(items: T[], requested: string | number, size = PAGE_SIZE): DirectoryPage<T> {
+  const pages = Math.max(1, Math.ceil(items.length / size));
+  const asked = typeof requested === "number" ? requested : Number.parseInt(requested, 10);
+  const page = Number.isInteger(asked) && asked >= 1 ? Math.min(asked, pages) : 1;
+  return { items: items.slice((page - 1) * size, page * size), page, pages };
+}
+
 export function filterDirectory(entries: DirectoryEntry[], filters: DirectoryFilters): DirectoryEntry[] {
   const query = searchable(filters.q);
   const facet = searchable(filters.facet);

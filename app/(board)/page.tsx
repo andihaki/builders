@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import Form from "next/form";
 import Link from "@/app/components/responsive-link";
 import { shareCard } from "../content";
@@ -21,6 +21,7 @@ import {
   isDirectorySource,
   openingCounts,
   openingLabel,
+  paginate,
   isDirectoryTrack,
   productEntries,
   repoEntry,
@@ -35,6 +36,9 @@ import { badgeKindLabel, badgeLabel, badgePeople, isBadgeKind, type Badge, type 
 import { roleLabel } from "../lib/roles";
 import { ProjectLogo } from "../components/project-logo";
 import { LinkIcon } from "../components/link-icons";
+import { StarButton, StarCount, StarsProvider } from "../components/star-button";
+import { RelativeTime } from "../components/relative-time";
+import { FilterPanel, type ActiveFilter } from "../components/filter-panel";
 import { currentLocale } from "../lib/locale-server";
 import { tx, type Locale } from "../lib/locale";
 
@@ -114,6 +118,18 @@ const LANGUAGE_COLOURS: Record<string, string> = {
   Dart: "#00b4ab",
   Ruby: "#701516",
   Swift: "#f05138",
+  HTML: "#e34c26",
+  CSS: "#663399",
+  "Objective-C": "#438eff",
+  Shell: "#89e051",
+  "C#": "#178600",
+  "C++": "#f34b7d",
+  C: "#555555",
+  Vue: "#41b883",
+  Svelte: "#ff3e00",
+  "Jupyter Notebook": "#da5b0b",
+  Elixir: "#6e4a7e",
+  Lua: "#000080",
 };
 
 /**
@@ -144,7 +160,6 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               )}
             </p>
           </div>
-          <Link className="dx-head-link" href="/recommend">{tx(locale, "+ Usulkan repo", "+ Suggest a repo")}</Link>
         </header>
 
         <Suspense fallback={<DirectorySkeleton />}>
@@ -158,7 +173,8 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
 }
 
 async function DirectoryBody({ query, locale }: { query: SearchParams; locale: Locale }) {
-  const filters = readFilters(await query);
+  const raw = await query;
+  const filters = readFilters(raw);
   // GitHub's facts come from the database, read once and shared by catalogue
   // repos and products; nothing on this page calls GitHub.
   const signalsResult = await readPublicly("repository signals in the directory", () => listRepoSignals(), {});
@@ -184,6 +200,14 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
     ),
   ];
   const matched = filterDirectory(entries, filters);
+  // The page lives in the URL beside the filters; every filter link is built
+  // without it, so changing what is shown starts again from page one.
+  const shown = paginate(matched, one(raw.page));
+  const pageHref = (page: number) => {
+    const base = pathFor(filters);
+    if (page <= 1) return base;
+    return `${base}${base.includes("?") ? "&" : "?"}page=${page}`;
+  };
   const onTrack = entries.filter((entry) => entry.track === filters.track);
   const facets = directoryFacets(entries, filters.track);
   const sources = DIRECTORY_SOURCES.map((source) => ({
@@ -195,6 +219,14 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
   const tiers = filters.track === "github" ? prTierCounts(entries) : [];
   const code = filters.track === "github";
   const filtered = Boolean(filters.source || filters.open || filters.pr || filters.badge || filters.facet || filters.q);
+  // What a phone's filter bar shows as chips, each one a link that drops it.
+  const active: ActiveFilter[] = [
+    ...(filters.pr ? [{ label: prTierLabel(filters.pr, locale), href: pathFor({ ...filters, pr: "" }) }] : []),
+    ...(filters.open ? [{ label: openingLabel(filters.open, locale), href: pathFor({ ...filters, open: "" }) }] : []),
+    ...(filters.badge ? [{ label: badgeKindLabel(filters.badge, locale), href: pathFor({ ...filters, badge: "" }) }] : []),
+    ...(filters.source ? [{ label: sourceLabel(filters.source, locale), href: pathFor({ ...filters, source: "" }) }] : []),
+    ...(filters.facet ? [{ label: filters.facet, href: pathFor({ ...filters, facet: "" }) }] : []),
+  ];
 
   return (
     <div className="dx-layout">
@@ -215,7 +247,7 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
         ))}
       </nav>
 
-      <aside className="dx-side" aria-label={tx(locale, "Filter", "Filters")}>
+      <FilterPanel active={active}>
         <FacetGroup className="dx-facet-tracks" title={tx(locale, "Cara kontribusi", "How to contribute")}>
           {DIRECTORY_TRACKS.map((track) => (
             <FacetLink
@@ -281,9 +313,6 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
 
         {sources.length > 1 ? (
           <FacetGroup title={tx(locale, "Sumber", "Source")}>
-            <FacetLink all active={filters.source === ""} href={pathFor({ ...filters, source: "" })} count={onTrack.length}>
-              {tx(locale, "Semua", "All")}
-            </FacetLink>
             {sources.map(({ source, count }) => (
               <FacetLink
                 key={source}
@@ -298,10 +327,11 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
         ) : null}
 
         {facets.length > 0 ? (
-          <FacetGroup title={code ? tx(locale, "Bahasa", "Language") : tx(locale, "Peran yang dicari", "Role wanted")}>
-            <FacetLink all active={filters.facet === ""} href={pathFor({ ...filters, facet: "" })} count={onTrack.length}>
-              {tx(locale, "Semua", "All")}
-            </FacetLink>
+          <FacetGroup
+            title={code ? tx(locale, "Bahasa", "Languages") : tx(locale, "Peran yang dicari", "Roles wanted")}
+            more={code ? tx(locale, "Bahasa lainnya…", "More languages…") : tx(locale, "Peran lainnya…", "More roles…")}
+            openMore={facets.findIndex(({ value }) => value === filters.facet) >= FACETS_SHOWN}
+          >
             {facets.map(({ value, count }) => (
               <FacetLink
                 key={value}
@@ -315,7 +345,7 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
             ))}
           </FacetGroup>
         ) : null}
-      </aside>
+      </FilterPanel>
 
       <section className="dx-results" aria-label={tx(locale, "Hasil", "Results")}>
         <div className="dx-toolbar">
@@ -344,16 +374,16 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
           </p>
         ) : null}
 
+        <StarsProvider repos={code ? shown.items.flatMap((entry) => (entry.repo ? [entry.repo] : [])) : []}>
         <div className={`dx-table dx-table-${filters.track}`} role="table" aria-label={tx(locale, "Daftar project", "Project list")}>
           <div className="dx-row dx-row-head" role="row">
             <span role="columnheader">Project</span>
-            <span role="columnheader">{code ? tx(locale, "Bahasa", "Language") : tx(locale, "Mencari", "Looking for")}</span>
-            <span role="columnheader" className="dx-col-stars">{code ? "★" : ""}</span>
+            {code ? null : <span role="columnheader">{tx(locale, "Mencari", "Looking for")}</span>}
             <span role="columnheader"><span className="sr-only">{tx(locale, "Aksi", "Action")}</span></span>
           </div>
 
           {matched.length > 0 ? (
-            matched.map((entry) => <DirectoryRow key={entry.key} entry={entry} locale={locale} />)
+            shown.items.map((entry) => <DirectoryRow key={entry.key} entry={entry} locale={locale} />)
           ) : (
             <div className="dx-empty" role="row">
               <p role="cell">
@@ -363,6 +393,29 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
             </div>
           )}
         </div>
+        </StarsProvider>
+
+        {shown.pages > 1 ? (
+          <nav className="dx-pager" aria-label={tx(locale, "Halaman", "Pages")}>
+            {shown.page > 1 ? (
+              <Link href={pageHref(shown.page - 1)} rel="prev">
+                <span aria-hidden="true">←</span> {tx(locale, "Sebelumnya", "Previous")}
+              </Link>
+            ) : (
+              <span aria-hidden="true" />
+            )}
+            <p>
+              {tx(locale, `Halaman ${shown.page} dari ${shown.pages}`, `Page ${shown.page} of ${shown.pages}`)}
+            </p>
+            {shown.page < shown.pages ? (
+              <Link href={pageHref(shown.page + 1)} rel="next">
+                {tx(locale, "Berikutnya", "Next")} <span aria-hidden="true">→</span>
+              </Link>
+            ) : (
+              <span aria-hidden="true" />
+            )}
+          </nav>
+        ) : null}
 
         <p className="dx-suggest">
           {filters.track === "github"
@@ -379,11 +432,44 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
   );
 }
 
-function FacetGroup({ title, className = "", children }: { title: string; className?: string; children: React.ReactNode }) {
+/** How many entries a long group shows before folding the rest away, as GitHub does with languages. */
+const FACETS_SHOWN = 6;
+
+function FacetGroup({
+  title,
+  className = "",
+  more,
+  openMore = false,
+  children,
+}: {
+  title: string;
+  className?: string;
+  /** Label for the fold, when the group may run long. */
+  more?: string;
+  /** Unfolded from the start, because what is selected is inside it. */
+  openMore?: boolean;
+  children: React.ReactNode;
+}) {
+  const items = React.Children.toArray(children);
+  const shown = more ? items.slice(0, FACETS_SHOWN) : items;
+  const rest = more ? items.slice(FACETS_SHOWN) : [];
   return (
     <div className={`dx-facet ${className}`}>
       <p className="dx-facet-title">{title}</p>
-      <ul>{children}</ul>
+      <ul>
+        {shown}
+        {rest.length > 0 ? (
+          <li className="dx-facet-more">
+            <details open={openMore}>
+              <summary>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>
+                {more}
+              </summary>
+              <ul>{rest}</ul>
+            </details>
+          </li>
+        ) : null}
+      </ul>
     </div>
   );
 }
@@ -394,7 +480,6 @@ function FacetLink({
   count,
   icon,
   note,
-  all = false,
   children,
 }: {
   active: boolean;
@@ -402,12 +487,10 @@ function FacetLink({
   count: number;
   icon?: React.ReactNode;
   note?: string;
-  /** The "All" entry of a group, which a phone leaves out. */
-  all?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <li className={all ? "dx-facet-all" : undefined}>
+    <li>
       <Link className={`dx-facet-link ${active ? "is-active" : ""}`} aria-current={active ? "true" : undefined} href={href}>
         {icon}
         <span className="dx-facet-label">
@@ -505,28 +588,37 @@ function TrackIcon({ track }: { track: DirectoryTrack }) {
 function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale }) {
   const external = { target: "_blank", rel: "noopener noreferrer" };
   const owner = entry.kind === "product" ? tx(locale, `oleh ${entry.owner}`, `by ${entry.owner}`) : entry.owner;
+  const code = entry.track === "github";
+  const issues = code && entry.actionKind === "issues";
+  // On the code path a card reads like a row of GitHub's repository list:
+  // titled `owner/repo` in GitHub's own spelling, the owner's avatar beside
+  // it, no separate repo or website links — the title is the repo link.
+  const slug = entry.links.find((link) => link.kind === "github")?.label ?? `${entry.owner}/${entry.name}`;
+  const title = code ? slug : entry.name;
+  const avatar = code ? `https://github.com/${encodeURIComponent(slug.split("/")[0])}.png?size=80` : entry.logoUrl;
 
   return (
     // A repository not taking PRs stays findable for its code, but recedes.
     <div className={`dx-row ${entry.prTier && !entry.welcomesPRs && entry.track === "github" ? "dx-row-quiet" : ""}`} role="row">
       <div className="dx-cell-main" role="cell">
         <ProjectLogo
-          className="dx-logo"
-          title={entry.name}
-          website={entry.website}
-          logoUrl={entry.logoUrl}
-          fallback={entry.name.slice(0, 1).toUpperCase()}
+          className={`dx-logo ${code ? "dx-logo-avatar" : ""}`}
+          title={title}
+          website={code ? "" : entry.website}
+          logoUrl={avatar}
+          fallback={title.slice(0, 1).toUpperCase()}
         />
         <div className="dx-main-copy">
           <p className="dx-name">
             {entry.href.startsWith("http") ? (
-              <a href={entry.href} {...external}>{entry.name}</a>
+              <a href={entry.href} {...external}>{title}</a>
             ) : (
-              <Link href={entry.href}>{entry.name}</Link>
+              <Link href={entry.href}>{title}</Link>
             )}
-            {/* Every tier on the code path; on the role path only an invitation,
-                as the sign that this product takes code as well. */}
-            {entry.prTier && (entry.track === "github" || entry.welcomesPRs) ? (
+            {/* The PR status belongs to the code path. A product asking for
+                both simply appears on both tabs; neither card points at the
+                other. */}
+            {code && entry.prTier ? (
               <span className={`dx-prs dx-prs-${entry.prTier}`}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="18" r="2.5" />
@@ -535,58 +627,63 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
                 {prTierLabel(entry.prTier, locale)}
               </span>
             ) : null}
-            <span className="dx-owner">{owner}</span>
+            {code ? null : <span className="dx-owner">{owner}</span>}
           </p>
-          {entry.links.length > 0 ? (
+          {!code && entry.links.length > 0 ? (
             <p className="dx-links">
-              {entry.links.map((link) => (
-                <a key={link.kind} href={link.href} {...external}>
-                  <LinkIcon kind={link.kind} className="dx-link-icon" />
-                  <span className="sr-only">{link.kind === "github" ? "GitHub: " : tx(locale, "Situs: ", "Website: ")}</span>
-                  {link.label}
-                </a>
-              ))}
+              {/* Icons only: the repo's name is already the card's title, and
+                  the address is a hover away. */}
+              {entry.links.map((link) => {
+                const label = `${link.kind === "github" ? "GitHub" : tx(locale, "Situs", "Website")}: ${link.label}`;
+                return (
+                  <a key={link.kind} className="dx-icon-link" href={link.href} title={label} aria-label={label} {...external}>
+                    <LinkIcon kind={link.kind} className="dx-link-icon" />
+                  </a>
+                );
+              })}
             </p>
           ) : null}
           {entry.description ? <p className="dx-desc">{entry.description}</p> : null}
-          {entry.why ? (
-            <p className="dx-why">
-              <span>{tx(locale, "Kenapa:", "Why:")}</span> {entry.why}
-              {entry.submittedBy ? (
-                <>
-                  {" — "}
-                  <Link href={`/u/${entry.submittedBy.username}`}>{entry.submittedBy.name}</Link>
-                </>
-              ) : null}
-            </p>
-          ) : null}
           {entry.badges.length > 0 ? (
             <ul className="dx-badges" aria-label={tx(locale, "Tanda", "Signals")}>
               {entry.badges.map((badge) => <BadgeChip key={badge.kind} badge={badge} locale={locale} />)}
             </ul>
-          ) : null}
-          {entry.alsoWanted ? (
-            <p className="dx-also">
-              <Link href={entry.alsoWanted.href}>
-                {tx(locale, "Juga mencari", "Also looking for")}{" "}
-                <strong>{entry.alsoWanted.roles.slice(0, 2).join(", ")}</strong>
-                {entry.alsoWanted.roles.length > 2 ? ` +${entry.alsoWanted.roles.length - 2}` : ""}
-                <span aria-hidden="true"> →</span>
-              </Link>
-            </p>
           ) : null}
           {entry.track === "github" && entry.labels.length > 0 ? (
             <p className="dx-tags">
               {entry.labels.map((label) => <span key={label} className="dx-tag">{label}</span>)}
             </p>
           ) : null}
+          {/* GitHub's own footer line: language · stars · last push. The
+              count lives here, apart from the Star button that changes it. */}
+          {code && (entry.language || entry.stars !== null || entry.updatedAt || issues) ? (
+            <p className="dx-meta">
+              {entry.language ? <span className="dx-lang"><LanguageDot language={entry.language} />{entry.language}</span> : null}
+              {entry.stars !== null && entry.repo ? <StarCount repo={entry.repo} stars={entry.stars} /> : null}
+              {entry.updatedAt ? (
+                <span>
+                  {tx(locale, "Diperbarui ", "Updated ")}
+                  <RelativeTime value={entry.updatedAt} locale={locale} />
+                </span>
+              ) : null}
+              {/* Where a first PR starts. */}
+              {issues ? (
+                <a className="dx-issues-link" href={entry.actionHref} {...external}>
+                  <svg className="dx-link-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+                  </svg>
+                  {entry.kind === "repo" ? tx(locale, "Isu pemula", "Starter issues") : tx(locale, "Isu", "Issues")}
+                </a>
+              ) : null}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <div className="dx-cell-meta" role="cell">
-        {entry.track === "github" ? (
-          entry.language ? <span className="dx-lang"><LanguageDot language={entry.language} />{entry.language}</span> : <span className="dx-muted">—</span>
-        ) : (
+      {/* The roles column is the role path's only; on the code path the
+          language sits in the card's meta line instead. */}
+      {code ? null : (
+        <div className="dx-cell-meta" role="cell">
           <span className="dx-roles">
             {/* The column header says this on a wide table; a stacked card
                 has no header, so the chips would otherwise be unexplained. */}
@@ -594,31 +691,21 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
             {entry.labels.slice(0, 2).map((label) => <span key={label} className="dx-role">{label}</span>)}
             {entry.labels.length > 2 ? <span className="dx-muted">+{entry.labels.length - 2}</span> : null}
           </span>
-        )}
-      </div>
-
-      <div className="dx-cell-stars" role="cell">
-        {/* Empty, not a dash, when GitHub has not answered: the cell then
-            disappears from a stacked card instead of reading "★ —". */}
-        {entry.stars !== null ? (
-          <span
-            className="dx-stars"
-            title={tx(locale, `${entry.stars} bintang di GitHub`, `${entry.stars} stars on GitHub`)}
-          >
-            <span aria-hidden="true">★</span> {compactNumber(entry.stars, locale)}
-            <span className="sr-only">{tx(locale, " bintang di GitHub", " stars on GitHub")}</span>
-          </span>
-        ) : null}
-      </div>
+        </div>
+      )}
 
       <div className="dx-cell-action" role="cell">
-        {entry.external ? (
+        {/* On the code path the row ends like a GitHub search result: the Star
+            button. Elsewhere, the way in. */}
+        {code && entry.repo ? (
+          <StarButton repo={entry.repo} />
+        ) : entry.external ? (
           <a className="dx-action" href={entry.actionHref} {...external}>
-            {entry.actionKind === "issues" ? tx(locale, "Lihat isu", "Issues") : tx(locale, "Repo", "Repo")} <span aria-hidden="true">↗</span>
+            {tx(locale, "Repo", "Repo")} <span aria-hidden="true">↗</span>
           </a>
         ) : (
           <Link className="dx-action" href={entry.actionHref}>
-            {tx(locale, "Lihat peran", "See roles")} <span aria-hidden="true">→</span>
+            {tx(locale, "Ajukan diri", "Offer to help")} <span aria-hidden="true">→</span>
           </Link>
         )}
       </div>
@@ -638,10 +725,6 @@ function DirectorySkeleton() {
       </div>
     </div>
   );
-}
-
-function compactNumber(value: number, locale: Locale): string {
-  return new Intl.NumberFormat(locale === "id" ? "id-ID" : "en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function one(value: string | string[] | undefined): string {

@@ -44,11 +44,11 @@ function absoluteDate(timestamp: number, locale: Locale): string {
 function relativeDate(timestamp: number, now: number, locale: Locale): string {
   const days = Math.max(0, Math.floor((now - timestamp) / 86_400_000));
   if (days < 1) return tx(locale, "hari ini", "today");
-  if (days < 30) return tx(locale, `${days} hari lalu`, `${days} days ago`);
+  if (days < 30) return tx(locale, `${days} hari lalu`, `${days} ${days === 1 ? "day" : "days"} ago`);
   if (days < 365) {
     const months = Math.floor(days / 30);
-    return tx(locale, `${months} bulan lalu`, `${months} months ago`);
+    return tx(locale, `${months} bulan lalu`, `${months} ${months === 1 ? "month" : "months"} ago`);
   }
   const years = Math.floor(days / 365);
-  return tx(locale, `${years} tahun lalu`, `${years} years ago`);
+  return tx(locale, `${years} tahun lalu`, `${years} ${years === 1 ? "year" : "years"} ago`);
 }
