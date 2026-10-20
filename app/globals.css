@@ -3623,15 +3623,21 @@ form button[aria-busy="true"]::after,
 .dx-head h1 { font-size: 26px; font-weight: 650; letter-spacing: -.03em; line-height: 1.15; margin: 0; }
 .dx-head p { color: var(--dx-muted); font-size: 14px; margin: 6px 0 0; }
 .dx-head p.dx-head-community { line-height: 1.6; }
-.dx-head p.dx-head-powered { align-items: center; display: flex; font-size: 11px; gap: 6px; margin-top: 6px; }
+.dx-head-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; }
+.dx-head p.dx-head-powered { align-items: center; display: flex; font-size: 11px; gap: 6px; margin: 0; }
+.dx-wa-cta {
+  align-items: center; background: light-dark(#1f883d, #238636); border: 1px solid light-dark(#1a7f37, #2ea043);
+  border-radius: 6px; color: light-dark(#fff, #fff); display: inline-flex; font-size: 13px; font-weight: 600; gap: 7px;
+  height: 32px; padding: 0 14px;
+}
+.dx-wa-cta:hover { background: light-dark(#1a7f37, #2ea043); }
+.dx-wa-cta svg { fill: none; height: 16px; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.8; width: 16px; }
 .dx-head-powered a { display: inline-flex; }
 .dx-head-powered img { border-radius: 5px; display: block; }
 .dx-head-stats { display: flex; flex: none; gap: 28px; margin: 0; }
 .dx-head-stats div { display: flex; flex-direction: column-reverse; gap: 2px; }
 .dx-head-stats dt { color: var(--dx-muted); font-size: 12px; }
 .dx-head-stats dd { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; margin: 0; }
-.dx-head-community svg { display: inline-block; fill: none; height: 15px; margin-right: 4px; vertical-align: -2px; stroke: light-dark(#25a244, #60c46f); stroke-linejoin: round; stroke-width: 1.7; width: 15px; }
-.dx-head-community a { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: #25a244; text-underline-offset: 3px; }
 
 .dx-layout { align-items: start; display: grid; gap: 40px; grid-template-columns: 232px minmax(0, 1fr); padding-top: 24px; }
 .dx-mtabs { display: none; }
