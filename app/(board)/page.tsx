@@ -180,6 +180,9 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               </a>
             </p>
           </div>
+          <Suspense fallback={null}>
+            <HeadStats locale={locale} />
+          </Suspense>
         </header>
 
         <Suspense fallback={<DirectorySkeleton />}>
@@ -192,9 +195,11 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
   );
 }
 
-async function DirectoryBody({ query, locale }: { query: SearchParams; locale: Locale }) {
-  const raw = await query;
-  const filters = readFilters(raw);
+/**
+ * Everything listed, both tracks. Every read underneath is cached, so the
+ * heading's numbers and the list share one trip to the database.
+ */
+async function readDirectory(locale: Locale) {
   // GitHub's facts come from the database, read once and shared by catalogue
   // repos and products; nothing on this page calls GitHub.
   const signalsResult = await readPublicly("repository signals in the directory", () => listRepoSignals(), {});
@@ -219,6 +224,33 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
       productEntries(project, projectBlurb, (role) => roleLabel(role, "", locale), locale),
     ),
   ];
+  return { entries, members, unavailable: reposResult.unavailable || projectsResult.unavailable };
+}
+
+/** The directory in three numbers, beside the heading on a wide screen. */
+async function HeadStats({ locale }: { locale: Locale }) {
+  const { entries, members } = await readDirectory(locale);
+  const stats = [
+    { value: entries.filter((entry) => entry.track === "github").length, label: tx(locale, "Repo", "Repos") },
+    { value: entries.filter((entry) => entry.track === "role").length, label: tx(locale, "Produk cari bantuan", "Products seeking help") },
+    { value: members.length, label: "Builder" },
+  ];
+  return (
+    <dl className="dx-head-stats">
+      {stats.map((stat) => (
+        <div key={stat.label}>
+          <dt>{stat.label}</dt>
+          <dd>{stat.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+async function DirectoryBody({ query, locale }: { query: SearchParams; locale: Locale }) {
+  const raw = await query;
+  const filters = readFilters(raw);
+  const { entries, unavailable } = await readDirectory(locale);
   const matched = filterDirectory(entries, filters);
   // The page lives in the URL beside the filters; every filter link is built
   // without it, so changing what is shown starts again from page one.
@@ -392,7 +424,7 @@ async function DirectoryBody({ query, locale }: { query: SearchParams; locale: L
           </p>
         </div>
 
-        {reposResult.unavailable || projectsResult.unavailable ? (
+        {unavailable ? (
           <p className="public-data-notice" role="status">
             {tx(locale, "Sebagian daftar tidak dapat dimuat.", "Part of the list could not be loaded.")} <Link href={pathFor(filters)}>{tx(locale, "Muat ulang", "Reload")}</Link>.
           </p>

@@ -3626,6 +3626,10 @@ form button[aria-busy="true"]::after,
 .dx-head p.dx-head-powered { align-items: center; display: flex; font-size: 11px; gap: 6px; margin-top: 6px; }
 .dx-head-powered a { display: inline-flex; }
 .dx-head-powered img { border-radius: 5px; display: block; }
+.dx-head-stats { display: flex; flex: none; gap: 28px; margin: 0; }
+.dx-head-stats div { display: flex; flex-direction: column-reverse; gap: 2px; }
+.dx-head-stats dt { color: var(--dx-muted); font-size: 12px; }
+.dx-head-stats dd { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; margin: 0; }
 .dx-head-community svg { display: inline-block; fill: none; height: 15px; margin-right: 4px; vertical-align: -2px; stroke: light-dark(#25a244, #60c46f); stroke-linejoin: round; stroke-width: 1.7; width: 15px; }
 .dx-head-community a { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: #25a244; text-underline-offset: 3px; }
 
@@ -3914,6 +3918,7 @@ form button[aria-busy="true"]::after,
 @media (max-width: 640px) {
   .dx-page { padding-top: 22px; }
   .dx-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-bottom: 16px; }
+  .dx-head-stats { display: none; }
   .dx-head h1 { font-size: 22px; }
   .dx-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
   .dx-search { max-width: none; }
