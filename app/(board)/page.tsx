@@ -233,7 +233,7 @@ async function HeadStats({ locale }: { locale: Locale }) {
   const stats = [
     { value: entries.filter((entry) => entry.track === "github").length, label: tx(locale, "Repo", "Repos") },
     { value: entries.filter((entry) => entry.track === "role").length, label: tx(locale, "Produk cari bantuan", "Products seeking help") },
-    { value: members.length, label: "Builder" },
+    { value: members.length, label: tx(locale, "Member", "Members") },
   ];
   return (
     <dl className="dx-head-stats">
