@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "@/app/components/responsive-link";
 import { Arrow, SiteFooter, SiteHeader } from "../components/shell";
-import { shareCard } from "../content";
+import { shareCard, waCommunityUrl } from "../content";
 import { currentLocale } from "../lib/locale-server";
 import { tx } from "../lib/locale";
 import { prTierLabel, type PRTier } from "../lib/directory";
@@ -197,67 +197,51 @@ export default async function AboutPage() {
     <>
       <SiteHeader returnTo="/about" active="about" />
 
-      <main id="main-content" className="about-page">
-        <section className="about-section" aria-labelledby="about-title">
-          <p className="eyebrow light"><span /> {tx(locale, "Tentang Kami", "About Us")}</p>
-
-          <div className="about-intro">
-            <h1 id="about-title">
-              {tx(locale, "Bukan cuma open source.", "Not just open source.")}
-              <br />
-              {tx(locale, "Tapi ", "But ")}<em>open contribution</em>.
-            </h1>
-            <div className="about-copy">
-              <p>
-                <strong>{tx(locale, "“Oke, kamu bisa bikin softwarenya. Tapi bisa nggak jualinnya?”", "“Sure, you can build the software. But can you sell it?”")}</strong>{" "}
-                {tx(locale, "Celetuk orang yang paham bisnis, tepat setelah seorang programmer launch produknya.", "That is the business-minded one talking, right after a programmer ships their product.")}
-              </p>
-              <p>
-                {tx(
-                  locale,
-                  "Giliran orang bisnis yang tiba-tiba vibe coding, programmernya balik nyeletuk: “Coba aja terus. Tapi kalau nanti ada user beneran, bisa nggak tuh maintain-nya?”",
-                  "Then the business person tries vibe coding, and the programmer fires back: “Keep at it. But once there are real users, can you maintain it?”",
-                )}
-              </p>
-              <p>
-                {tx(
-                  locale,
-                  "Dua-duanya punya concern yang mungkin ada benernya. Valid. Tapi dua-duanya juga nggak nolong siapa-siapa kalau berhenti di komentar.",
-                  "Both concerns have a point. Both are valid. And neither one helps anybody if it stops at a comment.",
-                )}
-              </p>
-              <p>
-                {tx(
-                  locale,
-                  "Padahal kalau dilihat lagi, masing-masing justru megang bagian yang dibutuhin sama yang satunya.",
-                  "Look again, though, and each of them is holding exactly the piece the other is missing.",
-                )}
-              </p>
-              <p>
-                {tx(
-                  locale,
-                  "Jadi kenapa nggak kita buka aja jadi open contribution? Bukan cuma kodenya yang open source, tapi terbuka buat semua peran—dikembangin bareng sampai produknya bisa ngasih impact beneran.",
-                  "So why not open it up as open contribution? Not just open source code, but open to every role—built together until the product actually makes an impact.",
-                )}
-              </p>
-            </div>
+      <main id="main-content" className="ab-page">
+        <header className="ab-intro" aria-labelledby="about-title">
+          <p className="ab-kicker">{tx(locale, "Tentang kami", "About us")}</p>
+          <h1 id="about-title">
+            {tx(locale, "Bukan cuma open source. Tapi open contribution.", "Not just open source. But open contribution.")}
+          </h1>
+          <div className="ab-story">
+            <p className="ab-quote">
+              <strong>{tx(locale, "“Oke, kamu bisa bikin softwarenya. Tapi bisa nggak jualinnya?”", "“Sure, you can build the software. But can you sell it?”")}</strong>{" "}
+              {tx(locale, "Celetuk orang yang paham bisnis, tepat setelah seorang programmer launch produknya.", "That is the business-minded one talking, right after a programmer ships their product.")}
+            </p>
+            <p>
+              {tx(
+                locale,
+                "Giliran orang bisnis yang tiba-tiba vibe coding, programmernya balik nyeletuk: “Coba aja terus. Tapi kalau nanti ada user beneran, bisa nggak tuh maintain-nya?”",
+                "Then the business person tries vibe coding, and the programmer fires back: “Keep at it. But once there are real users, can you maintain it?”",
+              )}
+            </p>
+            <p>
+              {tx(
+                locale,
+                "Dua-duanya punya concern yang mungkin ada benernya. Valid. Tapi dua-duanya juga nggak nolong siapa-siapa kalau berhenti di komentar.",
+                "Both concerns have a point. Both are valid. And neither one helps anybody if it stops at a comment.",
+              )}
+            </p>
+            <p>
+              {tx(
+                locale,
+                "Padahal kalau dilihat lagi, masing-masing justru megang bagian yang dibutuhin sama yang satunya.",
+                "Look again, though, and each of them is holding exactly the piece the other is missing.",
+              )}
+            </p>
+            <p>
+              {tx(
+                locale,
+                "Jadi kenapa nggak kita buka aja jadi open contribution? Bukan cuma kodenya yang open source, tapi terbuka buat semua peran—dikembangin bareng sampai produknya bisa ngasih impact beneran.",
+                "So why not open it up as open contribution? Not just open source code, but open to every role—built together until the product actually makes an impact.",
+              )}
+            </p>
           </div>
+        </header>
 
-          <div
-            className="marquee"
-            aria-label={tx(locale, "Bangun bareng, rilis bareng, berdampak bareng", "Build together, ship together, make an impact")}
-          >
-            <span>{tx(locale, "Bangun bareng", "Build together")}</span>
-            <i aria-hidden="true">✦</i>
-            <span>{tx(locale, "Rilis bareng", "Ship together")}</span>
-            <i aria-hidden="true">✦</i>
-            <span>{tx(locale, "Berdampak bareng", "Make an impact")}</span>
-          </div>
-        </section>
-
-        <section className="how-section" aria-labelledby="directory-title">
-          <h2 id="directory-title">{tx(locale, "Cara pakai direktorinya.", "How the directory works.")}</h2>
-          <p className="about-lead">
+        <section className="ab-section" aria-labelledby="directory-title">
+          <h2 id="directory-title">{tx(locale, "Cara pakai direktorinya", "How the directory works")}</h2>
+          <p className="ab-lead">
             {tx(
               locale,
               "Halaman depan Builders adalah direktori project yang lagi nerima kontributor. Ada dua jalur, dan kamu tinggal pilih yang paling cocok sama keahlianmu.",
@@ -265,44 +249,38 @@ export default async function AboutPage() {
             )}
           </p>
 
-          <ol className="how-list">
-            <li>
-              <span>01</span>
-              <div>
-                <h3>{tx(locale, "Kode di GitHub", "Code on GitHub")}</h3>
-                <p>
-                  {tx(
-                    locale,
-                    "Repo open source—usulan komunitas, rekomendasi, dan produk member yang punya repo GitHub. Tiap kartu nunjukin bahasa, jumlah bintang, isu pemula, dan status PR-nya, jadi kamu tahu mana yang paling mungkin nerima PR pertamamu.",
-                    "Open source repositories—community suggestions, recommendations, and members' products with a GitHub repo. Each card shows the language, stars, starter issues, and PR status, so you know which is most likely to take your first PR.",
-                  )}
-                </p>
-              </div>
-            </li>
-            <li>
-              <span>02</span>
-              <div>
-                <h3>{tx(locale, "Peran lain", "Other roles")}</h3>
-                <p>
-                  {tx(
-                    locale,
-                    "Produk member yang lagi cari desainer, PM, peneliti, marketing, QA, dan peran lain. Klik “Ajukan diri”, pilih perannya, dan pemilik project yang memutuskan.",
-                    "Members' products looking for designers, PMs, researchers, marketers, QA, and more. Press “Offer to help”, pick the role, and the project's owner decides.",
-                  )}
-                </p>
-              </div>
-            </li>
-          </ol>
+          <div className="ab-cards ab-cards-two">
+            <Link className="ab-card" href="/">
+              <h3>{tx(locale, "Kode di GitHub", "Code on GitHub")}</h3>
+              <p>
+                {tx(
+                  locale,
+                  "Repo open source—usulan komunitas, rekomendasi, dan produk member yang punya repo GitHub. Tiap kartu nunjukin bahasa, jumlah bintang, isu pemula, dan status PR-nya, jadi kamu tahu mana yang paling mungkin nerima PR pertamamu.",
+                  "Open source repositories—community suggestions, recommendations, and members' products with a GitHub repo. Each card shows the language, stars, starter issues, and PR status, so you know which is most likely to take your first PR.",
+                )}
+              </p>
+            </Link>
+            <Link className="ab-card" href="/?track=role">
+              <h3>{tx(locale, "Peran lain", "Other roles")}</h3>
+              <p>
+                {tx(
+                  locale,
+                  "Produk member yang lagi cari desainer, PM, peneliti, marketing, QA, dan peran lain. Klik “Ajukan diri”, pilih perannya, dan pemilik project yang memutuskan.",
+                  "Members' products looking for designers, PMs, researchers, marketers, QA, and more. Press “Offer to help”, pick the role, and the project's owner decides.",
+                )}
+              </p>
+            </Link>
+          </div>
 
-          <h3 className="about-subhead">{tx(locale, "Arti status PR", "What the PR status means")}</h3>
-          <p className="about-lead">
+          <h3 className="ab-subhead">{tx(locale, "Arti status PR", "What the PR status means")}</h3>
+          <p className="ab-lead">
             {tx(
               locale,
               "Bukan sekadar centang dari pemiliknya. Status ini dihitung dari GitHub dan diperbarui tiap beberapa jam.",
               "Not just a box the owner ticked. It is worked out from GitHub and refreshed every few hours.",
             )}
           </p>
-          <ul className="about-tiers">
+          <ul className="ab-list">
             {TIERS.map(([tier, bodyId, bodyEn]) => (
               <li key={tier}>
                 <span className={`dx-tier-dot dx-tier-dot-${tier}`} aria-hidden="true" />
@@ -314,39 +292,35 @@ export default async function AboutPage() {
             ))}
           </ul>
 
-          <h3 className="about-subhead">{tx(locale, "Tanda di kartu", "The signs on a card")}</h3>
-          <ul className="about-tiers">
+          <h3 className="ab-subhead">{tx(locale, "Tanda di kartu", "The signs on a card")}</h3>
+          <ul className="ab-list">
             <li>
-              <span className="about-sign" aria-hidden="true">✓</span>
+              <span className="ab-sign" aria-hidden="true">✓</span>
               <div>
                 <strong>{tx(locale, "Teman kita pernah kontribusi", "Friends have contributed")}</strong>
                 <p>{tx(locale, "Ada member Builders yang PR-nya pernah masuk ke sini. Kamu bisa tanya-tanya ke mereka dulu.", "A Builders member has landed a PR here before. You can ask them first.")}</p>
               </div>
             </li>
             <li>
-              <span className="about-sign" aria-hidden="true">●</span>
+              <span className="ab-sign" aria-hidden="true">●</span>
               <div>
                 <strong>{tx(locale, "Ada di grup kita", "In our group")}</strong>
                 <p>{tx(locale, "Maintainer-nya ada di komunitas kita, jadi PR pertamamu dibaca orang yang kenal kamu.", "The maintainer is in our community, so your first PR is read by someone who knows you.")}</p>
               </div>
             </li>
             <li>
-              <span className="about-sign" aria-hidden="true">☆</span>
+              <span className="ab-sign" aria-hidden="true">☆</span>
               <div>
                 <strong>Star</strong>
                 <p>{tx(locale, "Kasih bintang langsung dari direktori, persis seperti di GitHub. Cukup masuk dengan GitHub sekali.", "Star a repo straight from the directory, just like on GitHub. Sign in with GitHub once.")}</p>
               </div>
             </li>
           </ul>
-
-          <Link className="landing-inline-link" href="/">
-            {tx(locale, "Buka direktorinya", "Open the directory")} <Arrow />
-          </Link>
         </section>
 
-        <section className="how-section" aria-labelledby="roles-title">
-          <h2 id="roles-title">{tx(locale, "Kontribusi nggak cuma soal kode.", "Contribution is not only about code.")}</h2>
-          <p className="about-lead">
+        <section className="ab-section" aria-labelledby="roles-title">
+          <h2 id="roles-title">{tx(locale, "Kontribusi nggak cuma soal kode", "Contribution is not only about code")}</h2>
+          <p className="ab-lead">
             {tx(
               locale,
               "Bahkan nggak cuma dari programmer ke orang bisnis. Tiap peran ngelihat hal yang beda, dan tiap penglihatan itu bisa jadi kontribusi.",
@@ -354,33 +328,30 @@ export default async function AboutPage() {
             )}
           </p>
 
-          <ol className="how-list">
-            {ROLES.map(([titleId, titleEn, bodyId, bodyEn], index) => (
-              <li key={titleEn}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <h3>{tx(locale, titleId, titleEn)}</h3>
-                  <p>{tx(locale, bodyId, bodyEn)}</p>
-                </div>
+          <ul className="ab-cards">
+            {ROLES.map(([titleId, titleEn, bodyId, bodyEn]) => (
+              <li key={titleEn} className="ab-card">
+                <h3>{tx(locale, titleId, titleEn)}</h3>
+                <p>{tx(locale, bodyId, bodyEn)}</p>
               </li>
             ))}
-          </ol>
+          </ul>
 
-          <Link className="landing-inline-link" href="/?track=role">
+          <Link className="ab-more" href="/?track=role">
             {tx(locale, "Lihat project yang lagi cari peran lain", "See projects looking for other roles")} <Arrow />
           </Link>
         </section>
 
-        <section className="how-section" aria-labelledby="partner-title">
-          <h2 id="partner-title">{tx(locale, "Terbuka juga buat community partner.", "Open to community partners, too.")}</h2>
-          <p className="about-lead">
+        <section className="ab-section" aria-labelledby="partner-title">
+          <h2 id="partner-title">{tx(locale, "Terbuka juga buat community partner", "Open to community partners, too")}</h2>
+          <p className="ab-lead">
             {tx(
               locale,
               "Platform ini dibuat buat bangun personal project sekaligus cari teman kolaborasi, biar projectnya bisa impactful beneran. Targetnya lintas peran di ekosistem tech: engineer, PM, UI/UX, copywriter, marketing, data, dan siapa pun yang bisa bikin produk bertumbuh.",
               "This platform exists so people can build personal projects and find collaborators, so those projects can actually become impactful. It is aimed across the whole tech ecosystem: engineers, PMs, UI/UX, copywriters, marketers, data people, and anyone else who can make a product grow.",
             )}
           </p>
-          <p className="about-lead">
+          <p className="ab-lead">
             {tx(
               locale,
               "Kalau kamu ngelola komunitas tech, kami terbuka buat jadi community partner. Perannya sederhana: bagikan info ke member biar mereka bisa naruh projectnya di sini dan saling kontribusi.",
@@ -388,16 +359,16 @@ export default async function AboutPage() {
             )}
           </p>
 
-          <ul className="partner-benefits">
+          <ul className="ab-cards">
             {BENEFITS.map(([titleId, titleEn, bodyId, bodyEn]) => (
-              <li key={titleEn}>
+              <li key={titleEn} className="ab-card">
                 <h3>{tx(locale, titleId, titleEn)}</h3>
                 <p>{tx(locale, bodyId, bodyEn)}</p>
               </li>
             ))}
           </ul>
 
-          <p className="about-lead">
+          <p className="ab-lead">
             {tx(
               locale,
               "Harapannya makin banyak project yang beneran berdampak—buat masyarakat yang pakai, sekaligus buat karier orang yang ngerjain.",
@@ -405,15 +376,15 @@ export default async function AboutPage() {
             )}
           </p>
 
-          <Link className="landing-inline-link" href={CONTACT_PATH}>
+          <Link className="ab-more" href={CONTACT_PATH}>
             {tx(locale, "Ajak komunitasmu jadi community partner", "Bring your community in as a partner")} <Arrow />
           </Link>
         </section>
 
-        <section className="how-section" aria-labelledby="faq-title">
+        <section className="ab-section" aria-labelledby="faq-title">
           <h2 id="faq-title">{tx(locale, "Pertanyaan yang sering muncul", "Frequently asked questions")}</h2>
 
-          <div className="faq-list">
+          <div className="ab-faq">
             {FAQ.map(([questionId, questionEn, answerId, answerEn]) => (
               <details key={questionEn}>
                 <summary>{tx(locale, questionId, questionEn)}</summary>
@@ -423,25 +394,28 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        <section className="landing-final-cta" aria-labelledby="about-cta-title">
-          <p className="home-eyebrow">{tx(locale, "Gas aja, yok", "Let's go")}</p>
+        <section className="ab-cta" aria-labelledby="about-cta-title">
           <h2 id="about-cta-title">{tx(locale, "Gas aja kita saling kontribusi.", "Let's just contribute to each other.")}</h2>
           <p>
             {tx(
               locale,
-              "Usulkan projectmu atau repo yang layak dikontribusiin, atau ajak komunitasmu jadi community partner.",
-              "Suggest your project or a repo worth contributing to, or bring your community in as a partner.",
+              "Usulkan projectmu atau repo yang layak dikontribusiin, atau ajak komunitasmu jadi community partner. Gratis untuk komunitas.",
+              "Suggest your project or a repo worth contributing to, or bring your community in as a partner. Free for the community.",
             )}
           </p>
-          <div>
-            <Link className="home-hero-primary" href="/submit">
+          <div className="ab-cta-actions">
+            <Link className="ab-button ab-button-primary" href="/submit">
               <span aria-hidden="true">+</span> {tx(locale, "Usulkan project", "Suggest a project")}
             </Link>
-            <Link className="landing-final-secondary" href={CONTACT_PATH}>
-              {tx(locale, "Jadi community partner", "Become a community partner")} <Arrow />
+            {waCommunityUrl ? (
+              <a className="ab-button" href={waCommunityUrl} target="_blank" rel="noopener noreferrer">
+                Join WA Community
+              </a>
+            ) : null}
+            <Link className="ab-button" href={CONTACT_PATH}>
+              {tx(locale, "Jadi community partner", "Become a community partner")}
             </Link>
           </div>
-          <small>{tx(locale, "Gratis untuk komunitas.", "Free for the community.")}</small>
         </section>
       </main>
 

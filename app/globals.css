@@ -3623,6 +3623,8 @@ form button[aria-busy="true"]::after,
 .dx-head h1 { font-size: 26px; font-weight: 650; letter-spacing: -.03em; line-height: 1.15; margin: 0; }
 .dx-head p { color: var(--dx-muted); font-size: 14px; margin: 6px 0 0; }
 .dx-head p.dx-head-community { line-height: 1.6; }
+.dx-head-community a { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--dx-line); text-underline-offset: 3px; }
+.dx-head-community a:hover { text-decoration-color: currentColor; }
 .dx-head-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; }
 .dx-head p.dx-head-powered { align-items: center; display: flex; font-size: 11px; gap: 6px; margin: 0; }
 .dx-wa-cta {
@@ -3640,6 +3642,15 @@ form button[aria-busy="true"]::after,
 .dx-head-powered a { display: inline-flex; }
 .dx-head-powered img { border-radius: 5px; display: block; }
 .dx-head-stats { display: flex; flex: none; gap: 28px; margin: 0; }
+/* On a wide screen the sentence gets the whole width and the numbers share
+   the button's row, bottoms aligned; on a phone the numbers are hidden. */
+@media (min-width: 901px) {
+  .dx-head { align-items: end; display: grid; gap: 0 24px; grid-template-columns: minmax(0, 1fr) auto; }
+  .dx-head > div { display: contents; }
+  .dx-head h1, .dx-head p.dx-head-community { grid-column: 1 / -1; }
+  .dx-head-actions { grid-column: 1; }
+  .dx-head-stats { grid-column: 2; grid-row: 3; margin-top: 12px; }
+}
 .dx-head-stats div { display: flex; flex-direction: column-reverse; gap: 2px; }
 .dx-head-stats dt { color: var(--dx-muted); font-size: 12px; }
 .dx-head-stats dd { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; margin: 0; }
@@ -4331,3 +4342,66 @@ form.rf label { margin-bottom: 0; }
   border: 0; border-radius: 0; display: list-item; list-style: disclosure-closed; padding: 0;
 }
 .adm-rejected[open] > summary { list-style: disclosure-open; margin-bottom: 0; }
+
+/* About — the directory's own look: white page, black type, thin rules,
+   bordered cards with small radii. Colour only where it means something
+   (the PR status dots). */
+.ab-page {
+  background: light-dark(#fff, #1f1f1f); color: var(--dx-ink);
+  padding: 48px max(var(--gutter), calc((100% - 760px) / 2)) 80px; width: 100%;
+}
+.ab-kicker { color: var(--dx-muted); font-size: 13px; font-weight: 600; margin: 0 0 10px; }
+.ab-intro h1 { font-size: 34px; font-weight: 650; letter-spacing: -.03em; line-height: 1.15; margin: 0; }
+.ab-story { color: var(--dx-text); display: grid; font-size: 15.5px; gap: 14px; line-height: 1.7; margin-top: 24px; }
+.ab-story p { margin: 0; }
+.ab-story .ab-quote { color: var(--dx-ink); font-size: 17px; }
+.ab-section { border-top: 1px solid var(--dx-line); margin-top: 48px; padding-top: 40px; }
+.ab-section h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; line-height: 1.25; margin: 0 0 10px; }
+.ab-subhead { font-size: 16px; font-weight: 650; margin: 32px 0 6px; }
+.ab-lead { color: var(--dx-text); font-size: 15px; line-height: 1.65; margin: 0 0 14px; }
+.ab-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); list-style: none; margin: 18px 0; padding: 0; }
+.ab-cards-two { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.ab-card { border: 1px solid var(--dx-line); border-radius: 8px; color: inherit; display: block; padding: 16px; }
+.ab-card h3 { font-size: 15px; font-weight: 650; margin: 0 0 6px; }
+.ab-card p { color: var(--dx-muted); font-size: 13.5px; line-height: 1.6; margin: 0; }
+a.ab-card:hover { border-color: var(--dx-faint); }
+a.ab-card:hover h3 { color: light-dark(#0969da, #4493f8); }
+.ab-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.ab-list li { align-items: baseline; border-bottom: 1px solid var(--dx-line); display: flex; gap: 12px; padding: 12px 0; }
+.ab-list li:last-child { border-bottom: 0; }
+.ab-list strong { font-size: 14px; font-weight: 600; }
+.ab-list p { color: var(--dx-muted); font-size: 13.5px; line-height: 1.6; margin: 2px 0 0; }
+.ab-list .dx-tier-dot { flex: none; transform: translateY(-1px); }
+.ab-sign { color: var(--dx-muted); flex: none; font-size: 13px; text-align: center; width: 10px; }
+.ab-more { align-items: center; color: var(--dx-ink); display: inline-flex; font-size: 14px; font-weight: 600; gap: 6px; }
+.ab-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ab-faq { border: 1px solid var(--dx-line); border-radius: 8px; margin-top: 16px; }
+.ab-faq details + details { border-top: 1px solid var(--dx-line); }
+/* Undoes the site-wide pill summary: here a question is a full-width row. */
+.ab-faq details summary {
+  border: 0; border-radius: 0; cursor: pointer; display: block; font-size: 14.5px; font-weight: 600;
+  list-style: none; margin: 0; padding: 14px 40px 14px 16px; position: relative;
+}
+.ab-faq details summary:hover { background: var(--dx-soft); }
+.ab-faq summary::-webkit-details-marker { display: none; }
+.ab-faq summary::after { color: var(--dx-muted); content: "+"; font-weight: 400; position: absolute; right: 16px; }
+.ab-faq details[open] summary::after { content: "−"; }
+.ab-faq details:first-child summary { border-radius: 8px 8px 0 0; }
+.ab-faq details:last-child:not([open]) summary { border-radius: 0 0 8px 8px; }
+.ab-faq p { color: var(--dx-text); font-size: 14px; line-height: 1.65; margin: 0; padding: 0 16px 16px; }
+.ab-cta { background: var(--dx-soft); border-radius: 12px; margin-top: 56px; padding: 32px; }
+.ab-cta h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin: 0 0 8px; }
+.ab-cta p { color: var(--dx-text); font-size: 15px; line-height: 1.6; margin: 0; }
+.ab-cta-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.ab-button {
+  align-items: center; background: light-dark(#fff, #1f1f1f); border: 1px solid var(--dx-line); border-radius: 6px;
+  color: var(--dx-ink); display: inline-flex; font-size: 13.5px; font-weight: 600; gap: 6px; height: 36px; padding: 0 14px;
+}
+.ab-button:hover { border-color: var(--dx-faint); }
+.ab-button-primary { background: var(--dx-ink); border-color: var(--dx-ink); color: light-dark(#fff, #18181b); }
+.ab-button-primary:hover { background: light-dark(#27272a, #d4d4d8); border-color: light-dark(#27272a, #d4d4d8); }
+@media (max-width: 640px) {
+  .ab-page { padding-top: 32px; }
+  .ab-intro h1 { font-size: 27px; }
+  .ab-cta { padding: 24px 20px; }
+}
