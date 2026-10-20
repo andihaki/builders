@@ -3631,7 +3631,7 @@ form button[aria-busy="true"]::after,
   height: 32px; padding: 0 14px;
 }
 .dx-wa-cta:hover { background: light-dark(#1a7f37, #2ea043); }
-.dx-wa-cta svg { fill: none; height: 16px; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.8; width: 16px; }
+.dx-wa-cta svg { fill: currentColor; height: 15px; width: 15px; }
 .dx-head-powered a { display: inline-flex; }
 .dx-head-powered img { border-radius: 5px; display: block; }
 .dx-head-stats { display: flex; flex: none; gap: 28px; margin: 0; }
