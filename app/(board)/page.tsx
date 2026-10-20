@@ -170,7 +170,7 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               {waCommunityUrl ? (
                 <a className="dx-wa-cta" href={waCommunityUrl} target="_blank" rel="noopener noreferrer">
                   <WhatsAppIcon />
-                  {tx(locale, "Lihat cara bergabung", "See how to join")}
+                  Join WA Community
                 </a>
               ) : null}
               <p className="dx-head-powered">
