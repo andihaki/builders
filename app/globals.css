@@ -3913,8 +3913,7 @@ form button[aria-busy="true"]::after,
 }
 @media (max-width: 640px) {
   .dx-page { padding-top: 22px; }
-  .dx-head { align-items: center; flex-direction: column; gap: 12px; padding-bottom: 16px; text-align: center; }
-  .dx-head p.dx-head-powered { justify-content: center; }
+  .dx-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-bottom: 16px; }
   .dx-head h1 { font-size: 22px; }
   .dx-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
   .dx-search { max-width: none; }
