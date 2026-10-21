@@ -83,6 +83,11 @@ test("the callback itself is never redirected to itself", () => {
   assert.equal(strayCodeTarget("/auth/callback", params("code=abc"), true), null);
 });
 
+test("GitHub's code on its return route is left for Supabase", () => {
+  assert.equal(strayCodeTarget("/auth/github/return", params("code=abc&state=xyz"), false), null);
+  assert.equal(strayCodeTarget("/auth/github/return", params("code=abc&state=xyz"), true), null);
+});
+
 test("a request with no code is left alone", () => {
   assert.equal(strayCodeTarget("/get-started", params(""), false), null);
   assert.equal(strayCodeTarget("/get-started", params("all=1"), true), null);

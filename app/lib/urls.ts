@@ -41,6 +41,8 @@ export function startPath(next: string | null | undefined): string {
 /** The routes that know what to do with an authorization code. */
 export const CALLBACK_PATH = "/auth/callback";
 export const CONFIRM_PATH = "/auth/confirm";
+/** Where GitHub returns its code, to be passed on to Supabase untouched. */
+export const GITHUB_RETURN_PATH = "/auth/github/return";
 
 /**
  * What to do with an OAuth `code` that turned up on the wrong page.
@@ -69,11 +71,14 @@ export function strayCodeTarget(
   signedIn: boolean,
 ): { pathname: string; search: string } | null {
   const code = search.get("code");
-  // A code belongs on these two, which spend it themselves: redirecting the
-  // callback to itself loops, and moving a confirmation link to the callback
+  // A code belongs on these, which spend it themselves: redirecting the
+  // callback to itself loops, moving a confirmation link to the callback
   // would drop it back on `/auth/confirm` afterwards with nothing left to
-  // confirm.
-  if (!code || pathname === CALLBACK_PATH || pathname === CONFIRM_PATH) return null;
+  // confirm, and GitHub's code on its return route is meant for Supabase —
+  // spent at our callback it is not a Supabase code and the sign-in fails.
+  if (!code || pathname === CALLBACK_PATH || pathname === CONFIRM_PATH || pathname === GITHUB_RETURN_PATH) {
+    return null;
+  }
 
   if (signedIn) {
     const cleaned = new URLSearchParams(search);
