@@ -7,7 +7,7 @@ import { RepoForm } from "../components/repo-form";
 import { SubmitButton } from "../components/submit-button";
 import { isSiteAdmin, listCatalogueForAdmin } from "../lib/data";
 import { listLabel, reasonLabel, repoSlug, repoUrl, statusLabel, type OpenSourceRepo } from "../lib/open-source";
-import { currentViewer } from "../lib/session";
+import { viewerId } from "../lib/session";
 import { signInPath } from "../lib/urls";
 import { currentLocale } from "../lib/locale-server";
 import { tx, type Locale } from "../lib/locale";
@@ -34,15 +34,21 @@ export default async function AdminPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [viewer, locale] = await Promise.all([currentViewer(), currentLocale()]);
+  // All at once rather than one after another: each is its own trip to the
+  // database, and the catalogue read is harmless for a non-admin — the
+  // policies hand them only what they could see anyway, and they get a 404.
+  const [viewer, locale, admin, all, query] = await Promise.all([
+    viewerId(),
+    currentLocale(),
+    isSiteAdmin(),
+    listCatalogueForAdmin(),
+    searchParams ?? Promise.resolve({} as Record<string, string | string[] | undefined>),
+  ]);
   if (!viewer) redirect(signInPath("/admin"));
-  if (!(await isSiteAdmin())) notFound();
+  if (!admin) notFound();
 
-  const query = (await searchParams) ?? {};
   const editId = Number(typeof query.edit === "string" ? query.edit : NaN);
   const saved = typeof query.saved === "string" ? query.saved : "";
-
-  const all = await listCatalogueForAdmin();
   const pending = all.filter((repo) => repo.status === "pending");
   const approved = all.filter((repo) => repo.status === "approved");
   const rejected = all.filter((repo) => repo.status === "rejected");

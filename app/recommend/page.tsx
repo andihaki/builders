@@ -7,7 +7,7 @@ import { SubmitButton } from "../components/submit-button";
 import { listMySubmissions } from "../lib/data";
 import { listLabel, reasonLabel, repoSlug, repoUrl, statusLabel, type OpenSourceRepo } from "../lib/open-source";
 import { readPublicly } from "../lib/public-read";
-import { currentViewer } from "../lib/session";
+import { currentViewer, viewerId } from "../lib/session";
 import { signInPath } from "../lib/urls";
 import { currentLocale } from "../lib/locale-server";
 import { tx, type Locale } from "../lib/locale";
@@ -42,9 +42,15 @@ export default async function RecommendPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [viewer, locale, query] = await Promise.all([currentViewer(), currentLocale(), searchParams ?? Promise.resolve({})]);
+  // The submissions only need the id, which is checked locally, so they are
+  // read alongside the profile instead of after it.
+  const [viewer, locale, query, mine] = await Promise.all([
+    currentViewer(),
+    currentLocale(),
+    searchParams ?? Promise.resolve({}),
+    viewerId().then(async (id) => (id ? (await readPublicly("own repo submissions", () => listMySubmissions(id), [])).value : [])),
+  ]);
   const sent = (query as Record<string, unknown>).sent === "1";
-  const mine = viewer ? (await readPublicly("own repo submissions", () => listMySubmissions(viewer.id), [])).value : [];
 
   return (
     <>

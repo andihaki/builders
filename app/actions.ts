@@ -1392,7 +1392,8 @@ export async function saveRepo(_state: RepoFormState, formData: FormData): Promi
   };
   const mode = text(formData, "mode");
 
-  const viewer = await currentViewer();
+  // Only the id is needed: the profile row would be a round trip for nothing.
+  const viewer = await viewerId();
   if (!viewer) redirect(signInPath("/recommend"));
 
   const checked = validateRepoSubmission(values, locale);
@@ -1425,9 +1426,9 @@ export async function saveRepo(_state: RepoFormState, formData: FormData): Promi
       // Reasons are picked from a list now; the old free-text column stays
       // empty for new rows, and an edit leaves an old row's text alone.
       why: repo.why,
-      submitted_by: viewer.id,
+      submitted_by: viewer,
       ...(mode === "add"
-        ? { status: "approved", reviewed_by: viewer.id, reviewed_at: new Date().toISOString() }
+        ? { status: "approved", reviewed_by: viewer, reviewed_at: new Date().toISOString() }
         : {}),
     });
     if (error) return { errors: repoWriteError(error, locale), values };
@@ -1437,7 +1438,7 @@ export async function saveRepo(_state: RepoFormState, formData: FormData): Promi
     if (values.contributed === "contributor" || values.contributed === "maintainer") {
       const { error: recordError } = await supabase
         .from("oss_contributions")
-        .insert({ user_id: viewer.id, repo: repo.repo, relation: values.contributed });
+        .insert({ user_id: viewer, repo: repo.repo, relation: values.contributed });
       if (recordError && recordError.code !== "23505") {
         console.warn(`[ahsan] The submitter's own record was not updated: ${recordError.message}`);
       }
@@ -1464,7 +1465,7 @@ function repoWriteError(error: { code?: string; message: string }, locale: Local
 
 /** An admin's decision on a submission: approve or reject. */
 export async function reviewRepo(formData: FormData): Promise<void> {
-  const viewer = await currentViewer();
+  const viewer = await viewerId();
   if (!viewer) redirect(signInPath("/admin"));
 
   const id = Number(text(formData, "id"));
@@ -1474,7 +1475,7 @@ export async function reviewRepo(formData: FormData): Promise<void> {
   const supabase = await requireSupabase();
   const { error } = await supabase
     .from("oss_repos")
-    .update({ status: decision, reviewed_by: viewer.id, reviewed_at: new Date().toISOString() })
+    .update({ status: decision, reviewed_by: viewer, reviewed_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
 
@@ -1487,7 +1488,7 @@ export async function reviewRepo(formData: FormData): Promise<void> {
  * their own submission while it still waits. RLS decides which applies.
  */
 export async function deleteRepo(formData: FormData): Promise<void> {
-  const viewer = await currentViewer();
+  const viewer = await viewerId();
   const back = text(formData, "returnTo") === "/admin" ? "/admin" : "/recommend";
   if (!viewer) redirect(signInPath(back));
 

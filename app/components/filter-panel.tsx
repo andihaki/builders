@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "./responsive-link";
+import { InstantLink } from "./instant-link";
 import { useLanguage } from "./language-provider";
 
 export type ActiveFilter = { label: string; href: string };
@@ -13,7 +13,7 @@ export type ActiveFilter = { label: string; href: string };
  * away behind a bar — what is applied, as removable chips, and a Filter
  * button — and opens as a sheet from the bottom, with the list still showing
  * dimmed above it; tapping there closes it. Picking anything in the sheet
- * navigates, so the sheet closes itself on any link inside it.
+ * applies it, so the sheet closes itself on any link inside it.
  *
  * While open it is a modal: the page behind stops scrolling (so a swipe moves
  * the sheet, never the list under it), Escape closes it, and focus moves in
@@ -52,9 +52,9 @@ export function FilterPanel({ active, children }: { active: ActiveFilter[]; chil
           <ul className="dx-filterbar-chips">
             {active.map((filter) => (
               <li key={filter.href}>
-                <Link href={filter.href} aria-label={tx(`Hapus filter ${filter.label}`, `Remove filter ${filter.label}`)}>
+                <InstantLink href={filter.href} aria-label={tx(`Hapus filter ${filter.label}`, `Remove filter ${filter.label}`)}>
                   {filter.label} <span aria-hidden="true">×</span>
-                </Link>
+                </InstantLink>
               </li>
             ))}
           </ul>

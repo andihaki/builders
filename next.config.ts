@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
   // was created after the last deployment and therefore was not pre-rendered
   // below yet.
   partialPrefetching: true,
+  experimental: {
+    // Going back to a page seen in the last two minutes — Home, Explore,
+    // People, a profile — shows it from the browser instead of waiting on
+    // the server again. Every write still clears this at once (updateTag and
+    // revalidatePath in app/actions.ts), so it only ever repeats a page
+    // nothing has changed since.
+    staleTimes: { dynamic: 120 },
+  },
   cacheLife: {
     // The board, the people directory, a project page. Someone posting a
     // project wants to see it appear; the tag invalidation covers that, and
