@@ -1,7 +1,7 @@
 import { HeaderShell } from "../../components/shell";
 import { LoadingNote, Skeleton } from "../../components/skeleton";
 
-/** A project page's skeleton: hero panel, then the two-column body. */
+/** A project page's skeleton: hero panel, then the brief and the roles. */
 export default function Loading() {
   return (
     <>
@@ -14,26 +14,17 @@ export default function Loading() {
           <Skeleton height={56} width="55%" style={{ marginBottom: 16 }} />
           <Skeleton height={18} width="70%" />
         </div>
-        <div className="project-body">
-          <div className="project-main">
-            <div className="skeleton-panel" style={{ minHeight: 260 }}>
-              <Skeleton height={24} width={90} style={{ marginBottom: 22 }} />
-              <Skeleton height={15} style={{ marginBottom: 9 }} />
-              <Skeleton height={15} width="92%" style={{ marginBottom: 9 }} />
-              <Skeleton height={15} width="70%" />
-            </div>
-            <div className="skeleton-panel" style={{ minHeight: 180 }}>
-              <Skeleton height={24} width={140} style={{ marginBottom: 22 }} />
-              <Skeleton height={15} width="80%" />
-            </div>
+        <div className="project-main project-simple">
+          <div className="skeleton-panel" style={{ minHeight: 260 }}>
+            <Skeleton height={24} width={90} style={{ marginBottom: 22 }} />
+            <Skeleton height={15} style={{ marginBottom: 9 }} />
+            <Skeleton height={15} width="92%" style={{ marginBottom: 9 }} />
+            <Skeleton height={15} width="70%" />
           </div>
-          <aside className="project-side">
-            <div className="skeleton-panel" style={{ minHeight: 300 }}>
-              <Skeleton height={20} width={110} style={{ marginBottom: 18 }} />
-              <Skeleton height={14} width="85%" style={{ marginBottom: 10 }} />
-              <Skeleton height={14} width="70%" />
-            </div>
-          </aside>
+          <div className="skeleton-panel" style={{ minHeight: 180 }}>
+            <Skeleton height={24} width={140} style={{ marginBottom: 22 }} />
+            <Skeleton height={15} width="80%" />
+          </div>
         </div>
       </main>
     </>

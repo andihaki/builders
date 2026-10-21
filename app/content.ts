@@ -7,6 +7,19 @@ export const siteUrl = "https://builders.swegrowth.id";
  */
 export const waCommunityUrl = "https://chat.whatsapp.com/KPJDVO9A6RBLNa6HG2dQlF";
 
+/**
+ * The SWE Growth admin's WhatsApp (0823-3858-8078), in international form.
+ * For now an offer to help on a product's role goes here rather than through
+ * proposals on the site.
+ */
+const WA_ADMIN = "6282338588078";
+
+/** A chat with the admin, the message already written: the project and the role. */
+export function waOfferHelpUrl(project: string, role: string): string {
+  const text = `Halo Admin SWE Growth, saya tertarik untuk kontribusi pada ${project} sebagai ${role}.`;
+  return `https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(text)}`;
+}
+
 /** The shared picture, for pages that do not draw a card of their own. */
 export const defaultShareImage = { url: "/opengraph-image", width: 1200, height: 630 };
 

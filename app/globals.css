@@ -1710,6 +1710,10 @@ footer nav a:hover { color: var(--ink); }
 /* -------------------------------------------------------- the invitation */
 
 .help .seat-list { margin-top: 16px; }
+/* The product page without its tabs: one column, the brief then the roles. */
+.project-simple { margin-top: 16px; }
+.seat-offer { white-space: nowrap; }
+.seat-offer-note { color: var(--muted); font-size: 13px; margin: 14px 0 0; }
 
 /* ------------------------------------------------------------ inbox news */
 
