@@ -934,6 +934,14 @@ legend { font-size: 13px; font-weight: 700; padding: 0 8px; }
 .signin-simple-card .auth-provider-github { background: light-dark(#232323, #f3f3f3); border-color: light-dark(#232323, #f3f3f3); color: light-dark(#ffffff, #292929); }
 .signin-simple-card .auth-provider-github:hover { background: light-dark(#373737, #e2e2e2); border-color: light-dark(#373737, #e2e2e2); }
 .signin-simple-alt { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+/* The same GitHub button, on the form page that needs a session. */
+.sign-in-inline { margin-top: 26px; max-width: 400px; }
+.ob-card .sign-in-inline { margin-top: 0; }
+.sign-in-inline > p:first-child { color: var(--ink-soft); line-height: 1.55; margin: 0 0 14px; }
+.sign-in-inline .auth-form { background: transparent; border: 0; border-radius: 0; margin: 0; padding: 0; }
+.sign-in-inline .google-auth-button { min-height: 48px; }
+.sign-in-inline .auth-provider-github { background: light-dark(#232323, #f3f3f3); border-color: light-dark(#232323, #f3f3f3); color: light-dark(#ffffff, #292929); }
+.sign-in-inline .auth-provider-github:hover { background: light-dark(#373737, #e2e2e2); border-color: light-dark(#373737, #e2e2e2); }
 .signin-simple-alt a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .signin-simple-alt a:hover { color: var(--ink); }
 .signin-simple .signin-privacy { border-top: 1px solid var(--line-soft); margin: 22px 0 0; max-width: none; padding-top: 16px; }
