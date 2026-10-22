@@ -83,6 +83,8 @@ export type ProfileRow = {
   resume_url: string;
   /** Trail kinds this person keeps off their public profile. */
   activity_hidden: string[];
+  /** Agreed to their GitHub activity being shown on /activity; off until they turn it on. */
+  github_activity_shown: boolean;
   created_at: string;
 };
 

@@ -1063,7 +1063,10 @@ export async function setActivityVisibility(formData: FormData): Promise<void> {
   const supabase = await requireSupabase();
   const { error } = await supabase
     .from("profiles")
-    .update({ activity_hidden: hiddenFrom(shown, viewer.activityHidden) })
+    .update({
+      activity_hidden: hiddenFrom(shown, viewer.activityHidden),
+      github_activity_shown: formData.get("github_activity") === "1",
+    })
     .eq("id", viewer.id);
   if (error) throw new Error(error.message);
 

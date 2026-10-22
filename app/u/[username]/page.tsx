@@ -20,7 +20,7 @@ import {
   type Person,
   type ProjectSummary,
 } from "../../lib/data";
-import { HIGHLIGHT_KINDS, VISIBILITY_KINDS, visibilityLabel } from "../../lib/activity";
+import { EVENT_KINDS, HIGHLIGHT_KINDS, eventKindLabel } from "../../lib/activity";
 import { domainOf, projectBlurb } from "../../lib/brief";
 import { nextSteps, remainingSteps } from "../../lib/next-steps";
 import { githubHandle, type OssContribution } from "../../lib/oss";
@@ -261,15 +261,32 @@ export default async function ProfilePage({
                       {tx(locale, "Item yang dicentang muncul di profil publikmu. Item yang tidak dicentang tetap hanya terlihat olehmu—tetap tercatat dan tidak dihapus.", "Checked items appear on your public profile. Unchecked items remain visible only to you—they are still recorded and are not deleted.")}
                     </p>
                     <ul className="kind-list">
-                      {VISIBILITY_KINDS.map((kind) => (
+                      {EVENT_KINDS.map((kind) => (
                         <li key={kind}>
                           <label htmlFor={`show-${kind}`}>
                             <input id={`show-${kind}`} type="checkbox" name="show" value={kind} defaultChecked={!person.activityHidden.includes(kind)} />
-                            {visibilityLabel(kind, locale)}
+                            {eventKindLabel(kind, locale)}
                           </label>
                         </li>
                       ))}
                     </ul>
+                    {/* Not a trail kind, and the other way round: off until
+                        they turn it on. See 20261024000100_github_activity_opt_in.sql. */}
+                    <fieldset className="gh-consent">
+                      <legend>{tx(locale, "Halaman Aktivitas", "Activity page")}</legend>
+                      <label htmlFor="show-github-activity">
+                        <input id="show-github-activity" type="checkbox" name="github_activity" value="1" defaultChecked={person.githubActivityShown} />
+                        {tx(locale, "Tampilkan aktivitas GitHub-ku di halaman Aktivitas", "Show my GitHub activity on the Activity page")}
+                      </label>
+                      <p className="hint">
+                        {tx(
+                          locale,
+                          "Kalau dicentang, Builders membaca pull request dan jumlah commit publikmu dari GitHub tiap beberapa jam dan menampilkannya di /activity. Hilangkan centangnya kapan saja, dan datanya langsung disembunyikan lalu dihapus.",
+                          "When ticked, Builders reads your public pull requests and commit counts from GitHub every few hours and shows them on /activity. Untick it any time, and they are hidden at once, then deleted.",
+                        )}
+                        {person.github ? null : tx(locale, " Isi dulu username GitHub di profilmu.", " Add your GitHub username to your profile first.")}
+                      </p>
+                    </fieldset>
                     <SubmitButton pendingLabel={tx(locale, "Menyimpan…", "Saving…")}>{tx(locale, "Simpan", "Save")}</SubmitButton>
                   </form>
                 </details>

@@ -79,8 +79,8 @@ export default async function ActivityPage({ searchParams }: { searchParams?: Se
         <p className="lede">
           {tx(
             locale,
-            "Diambil langsung dari GitHub tiap beberapa jam—bukan diketik sendiri. Pull request ke repo orang lain tampil satu per satu; kerja di repo sendiri diringkas jadi satu baris.",
-            "Read straight from GitHub every few hours, never typed in. Pull requests to other people's repositories are listed one by one; work on one's own repositories is summed up in a single line.",
+            "Diambil langsung dari GitHub tiap beberapa jam—bukan diketik sendiri—untuk member yang memilih tampil. Pull request ke repo orang lain tampil satu per satu; kerja di repo sendiri diringkas jadi satu baris.",
+            "Read straight from GitHub every few hours, never typed in, for members who chose to be shown. Pull requests to other people's repositories are listed one by one; work on one's own repositories is summed up in a single line.",
           )}
         </p>
 
@@ -140,8 +140,7 @@ async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) 
         <div className="gh-activity-empty">
           <p>{all.length === 0 ? tx(locale, "Belum ada aktivitas yang tercatat.", "No activity recorded yet.") : tx(locale, "Tidak ada aktivitas untuk saringan ini.", "Nothing matches this filter.")}</p>
           <p>
-            {tx(locale, "Mau muncul di sini? Isi username GitHub di ", "Want to show up here? Add your GitHub username to ")}
-            <Link href="/account/profile">{tx(locale, "profilmu", "your profile")}</Link>.
+            {tx(locale, "Mau muncul di sini? Isi username GitHub di profilmu, lalu centang “Tampilkan aktivitas GitHub-ku” di pengaturan jejak karya.", "Want to show up here? Add your GitHub username to your profile, then tick “Show my GitHub activity” in your work trail settings.")}
           </p>
         </div>
       ) : (
@@ -163,8 +162,8 @@ async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) 
       <p className="gh-activity-note">
         {tx(
           locale,
-          "Hanya repo publik. Tidak mau tampil? Hilangkan centang “Aktivitas GitHub” di pengaturan jejak karya profilmu.",
-          "Public repositories only. Rather not be listed? Untick “GitHub activity” in your profile's work trail settings.",
+          "Hanya repo publik, dan hanya member yang memilih tampil. Berubah pikiran? Hilangkan centang “Tampilkan aktivitas GitHub-ku” di pengaturan jejak karya profilmu.",
+          "Public repositories only, and only members who chose to be shown. Changed your mind? Untick “Show my GitHub activity” in your profile's work trail settings.",
         )}
       </p>
     </>

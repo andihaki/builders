@@ -6,10 +6,14 @@
  * Called two ways, both from the database (see
  * 20261024000000_github_activity.sql):
  *
- *   - by pg_cron every six hours, with an empty body: every member with a
- *     GitHub account on their profile;
- *   - by a trigger when somebody changes the GitHub field on their profile,
- *     with `{ "users": ["<uuid>"] }`: just them, now.
+ *   - by pg_cron every six hours, with an empty body: every member who has
+ *     agreed to be shown (profiles.github_activity_shown) and has a GitHub
+ *     account on their profile;
+ *   - by a trigger when somebody changes either of those, with
+ *     `{ "users": ["<uuid>"] }`: just them, now.
+ *
+ * Nobody else is asked about at all: what has not been agreed to is not
+ * gathered, not merely hidden.
  *
  * It answers 202 at once and works in the background, like refresh-repos.
  *
@@ -51,7 +55,7 @@ async function refresh(asked: string[] | null): Promise<void> {
   const token = Deno.env.get("GITHUB_TOKEN");
   if (!token) throw new Error("GITHUB_TOKEN is not set.");
 
-  let request = supabase.from("profiles").select("id, github").neq("github", "");
+  let request = supabase.from("profiles").select("id, github").eq("github_activity_shown", true).neq("github", "");
   if (asked) request = request.in("id", asked);
   const { data, error } = await request;
   if (error) throw new Error(error.message);
@@ -62,8 +66,8 @@ async function refresh(asked: string[] | null): Promise<void> {
     if (handle) members.push({ id: row.id, handle });
   }
 
-  // Somebody asked about who has no GitHub account any more: what was stored
-  // under the old one goes.
+  // Somebody asked about who took their yes back, or has no GitHub account
+  // any more: what was stored for them goes.
   const without = (asked ?? []).filter((id) => !members.some((member) => member.id === id));
   if (without.length > 0) await forget(supabase, without);
   // A full run also clears anyone who is no longer on the list at all.
