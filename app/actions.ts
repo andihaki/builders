@@ -17,7 +17,7 @@ import { isStage, meetsStage, settleStage, type Stage } from "./lib/stages";
 import { TASK_LIMITS, isTaskStatus, validateTask } from "./lib/tasks";
 import { UPDATE_LIMITS, validateUpdate } from "./lib/updates";
 import { hiddenFrom } from "./lib/activity";
-import { isReactionKey } from "./lib/reactions";
+import { isReactionKey, isReactionTarget } from "./lib/reactions";
 import { getGitHubProjectDraft, isGitHubRepositoryUrl, type GitHubProjectDraft } from "./lib/github";
 import { fetchLinkMetadata, normaliseLink, titleFromLink } from "./lib/link-metadata";
 import { currentViewer, viewerId } from "./lib/session";
@@ -1186,13 +1186,14 @@ export async function saveGitHub(_state: GitHubState, formData: FormData): Promi
 export type ReactionResult = { ok: true } | { ok: false; reason: "signin" | "failed" };
 
 /**
- * Leaves an emoji on a pull request on /activity, or takes it back if the
- * viewer already left that one. Who may react to what is the table's
+ * Leaves an emoji on a pull request or a commit summary on /activity, or
+ * takes it back. `url` is the entry's key: the PR's URL, or
+ * `commits:<user_id>`. Who may react to what is the table's
  * policies' business — the PR has to be one the page shows — and the notice
  * to the PR's author is a trigger's; see 20261025000000_activity_reactions.sql.
  */
 export async function setReaction(url: string, emoji: string, on: boolean): Promise<ReactionResult> {
-  if (!isReactionKey(emoji) || !url.startsWith("https://github.com/") || url.length > 500) return { ok: false, reason: "failed" };
+  if (!isReactionKey(emoji) || !isReactionTarget(url)) return { ok: false, reason: "failed" };
   const viewer = await viewerId();
   if (!viewer) return { ok: false, reason: "signin" };
 

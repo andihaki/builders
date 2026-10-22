@@ -65,3 +65,24 @@ test("hand-set and member badges merge per kind without counting a person twice"
   ]);
   assert.deepEqual(mergeBadges([], []), []);
 });
+
+test("a typed record and GitHub's merged pull requests become one list", async () => {
+  const { mergeOssRows } = await import("../app/lib/oss.ts");
+  const rows = mergeOssRows(
+    [
+      { userId: "a", repo: "org/one", relation: "maintainer" },
+      { userId: "a", repo: "org/two", relation: "contributor" },
+    ],
+    [
+      { userId: "a", repo: "org/two" },
+      { userId: "a", repo: "org/three" },
+      { userId: "b", repo: "org/two" },
+    ],
+  );
+  assert.deepEqual(rows, [
+    { userId: "a", repo: "org/one", relation: "maintainer", manual: true, verified: false },
+    { userId: "a", repo: "org/two", relation: "contributor", manual: true, verified: true },
+    { userId: "a", repo: "org/three", relation: "contributor", manual: false, verified: true },
+    { userId: "b", repo: "org/two", relation: "contributor", manual: false, verified: true },
+  ]);
+});

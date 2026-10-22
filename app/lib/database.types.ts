@@ -238,7 +238,15 @@ export type GitHubCommitSummaryRow = {
   checked_at: string;
 };
 
-/** 20261025000000_activity_reactions.sql — one emoji, by one member, on one pull request. */
+/** 20261027000100_github_contributions.sql — a repository where a member's pull request was merged. */
+export type GitHubContributionRow = {
+  user_id: string;
+  repo: string;
+  first_merged_at: string;
+  last_merged_at: string;
+};
+
+/** 20261025000000_activity_reactions.sql — one emoji, by one member, on one pull request or commit summary. */
 export type ActivityReactionRow = {
   id: number;
   pull_request_url: string;
@@ -376,6 +384,12 @@ export type Database = {
       };
       github_commit_summaries: {
         Row: GitHubCommitSummaryRow;
+        Insert: never;
+        Update: never;
+      };
+      github_contributions: {
+        Row: GitHubContributionRow;
+        // Written only by the refresh-github-activity Edge Function.
         Insert: never;
         Update: never;
       };

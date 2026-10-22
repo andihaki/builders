@@ -25,7 +25,18 @@
  * the platform and never leave it.
  */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.51.0";
-import { BATCH_SIZE, buildQuery, chunk, githubHandle, parseResponse, type Member, type MemberActivity } from "./activity.ts";
+import {
+  BATCH_SIZE,
+  buildQuery,
+  chunk,
+  contributionsFrom,
+  githubHandle,
+  parseResponse,
+  suggestionsFrom,
+  type ContributionRow,
+  type Member,
+  type MemberActivity,
+} from "./activity.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -112,6 +123,8 @@ async function store(supabase: SupabaseClient, activity: MemberActivity): Promis
     if (activity.pullRequests.length > 0) stale = stale.not("url", "in", inList(activity.pullRequests.map((row) => row.url)));
     const { error } = await stale;
     if (error) throw new Error(error.message);
+
+    await keepContributions(supabase, activity);
   }
 
   const { error } = activity.summary
@@ -120,15 +133,45 @@ async function store(supabase: SupabaseClient, activity: MemberActivity): Promis
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Merged pull requests become lasting contributions — the directory's badges
+ * and the profile's record — and a repository nobody has listed yet is put
+ * forward to the catalogue as pending. See 20261027000100_github_contributions.sql.
+ */
+async function keepContributions(supabase: SupabaseClient, activity: Extract<MemberActivity, { found: true }>): Promise<void> {
+  const merged = activity.pullRequests.filter((pr) => pr.state === "merged");
+  if (merged.length === 0) return;
+
+  const { data, error } = await supabase
+    .from("github_contributions")
+    .select("user_id, repo, first_merged_at, last_merged_at")
+    .eq("user_id", activity.member.id);
+  if (error) throw new Error(error.message);
+
+  const rows = contributionsFrom(merged, (data ?? []) as ContributionRow[]);
+  const { error: saveError } = await supabase.from("github_contributions").upsert(rows, { onConflict: "user_id,repo" });
+  if (saveError) throw new Error(saveError.message);
+
+  // ignoreDuplicates: a repository already listed, pending or ever rejected
+  // keeps exactly the row it has.
+  const { error: suggestError } = await supabase
+    .from("oss_repos")
+    .upsert(
+      suggestionsFrom(merged, activity.member.handle).map((row) => ({ ...row, list: "recommended", status: "pending" })),
+      { onConflict: "repo", ignoreDuplicates: true },
+    );
+  if (suggestError) console.warn(`[refresh-github-activity] Could not put repositories forward: ${suggestError.message}`);
+}
+
 async function forget(supabase: SupabaseClient, ids: string[]): Promise<void> {
-  for (const table of ["github_pull_requests", "github_commit_summaries"]) {
+  for (const table of ["github_pull_requests", "github_commit_summaries", "github_contributions"]) {
     const { error } = await supabase.from(table).delete().in("user_id", ids);
     if (error) throw new Error(error.message);
   }
 }
 
 async function forgetAllBut(supabase: SupabaseClient, ids: string[]): Promise<void> {
-  for (const table of ["github_pull_requests", "github_commit_summaries"]) {
+  for (const table of ["github_pull_requests", "github_commit_summaries", "github_contributions"]) {
     let request = supabase.from(table).delete();
     request = ids.length > 0 ? request.not("user_id", "in", inList(ids)) : request.not("user_id", "is", null);
     const { error } = await request;

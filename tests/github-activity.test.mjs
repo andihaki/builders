@@ -125,3 +125,45 @@ test("the feed puts newest first and filters keep summaries out of merged and op
   assert.deepEqual(filterGitHubActivity(entries, "merged").map((entry) => entry.key), ["https://github.com/org/tool/pull/7"]);
   assert.deepEqual(filterGitHubActivity(entries, "open").map((entry) => entry.key), ["https://github.com/org/tool/pull/8"]);
 });
+
+test("the page's numbers, member chips and time runs come from the same entries", async () => {
+  const { activityPeople, activityStats, entriesOf, groupByPeriod } = await import("../app/lib/github-activity.ts");
+  const ana = { id: "a", username: "ana", name: "Ana", handle: "Ana" };
+  const budi = { id: "b", username: "budi", name: "Budi", handle: "budi" };
+  const pr = (key, person, repo, state, at) => ({ kind: "pull_request", key, person, repo, url: key, number: 1, title: "", state, at });
+  const entries = [
+    pr("1", ana, "org/a", "merged", "2026-10-21T00:00:00Z"),
+    pr("2", ana, "org/b", "open", "2026-10-10T00:00:00Z"),
+    pr("3", budi, "org/a", "merged", "2026-08-01T00:00:00Z"),
+    { kind: "commit_summary", key: "c", person: budi, commits: 4, repos: [], since: "", at: "2026-10-20T00:00:00Z" },
+  ];
+  assert.deepEqual(activityStats(entries), { people: 2, merged: 2, open: 1, repos: 2 });
+  assert.deepEqual(activityPeople(entries).map(({ person, count }) => [person.handle, count]), [["Ana", 2], ["budi", 1]]);
+  assert.deepEqual(entriesOf(entries, "ana").map((entry) => entry.key), ["1", "2"]);
+  assert.equal(entriesOf(entries, "").length, 4);
+  const runs = groupByPeriod(entries, new Date("2026-10-22T00:00:00Z"));
+  assert.deepEqual(runs.map(({ period, entries }) => [period, entries.map((entry) => entry.key)]), [["week", ["1", "c"]], ["month", ["2"]], ["earlier", ["3"]]]);
+});
+
+test("merged pull requests become lasting contributions and pending suggestions", async () => {
+  const { contributionsFrom, suggestionsFrom } = await import("../supabase/functions/refresh-github-activity/activity.ts");
+  const pr = (repo, number, state, merged_at) => ({
+    url: `https://github.com/${repo}/pull/${number}`, user_id: "u", repo, number, title: "", state, opened_at: "2026-10-01T00:00:00Z", merged_at, checked_at: "",
+  });
+  const prs = [
+    pr("org/a", 2, "merged", "2026-10-10T00:00:00Z"),
+    pr("org/a", 1, "merged", "2026-10-05T00:00:00Z"),
+    pr("org/b", 3, "open", null),
+    pr("org/c", 4, "merged", "2026-10-20T00:00:00Z"),
+  ];
+  // org/c was first merged long ago, before the 90-day window: that stays.
+  const stored = [{ user_id: "u", repo: "org/c", first_merged_at: "2026-01-01T00:00:00Z", last_merged_at: "2026-02-01T00:00:00Z" }];
+  assert.deepEqual(contributionsFrom(prs, stored), [
+    { user_id: "u", repo: "org/c", first_merged_at: "2026-01-01T00:00:00Z", last_merged_at: "2026-10-20T00:00:00Z" },
+    { user_id: "u", repo: "org/a", first_merged_at: "2026-10-05T00:00:00Z", last_merged_at: "2026-10-10T00:00:00Z" },
+  ]);
+  assert.deepEqual(suggestionsFrom(prs, "ana"), [
+    { repo: "org/a", why: "PR dari @ana sudah di-merge: https://github.com/org/a/pull/1", submitted_by: "u" },
+    { repo: "org/c", why: "PR dari @ana sudah di-merge: https://github.com/org/c/pull/4", submitted_by: "u" },
+  ]);
+});

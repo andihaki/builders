@@ -20,7 +20,7 @@ import type { Stage } from "./stages";
 import { SEED_REPOS, toOpenSourceRepo, type OpenSourceRepo } from "./open-source";
 import type { GitHubRepositoryStats } from "./github";
 import type { RepoActivity } from "./directory";
-import { githubHandle, isOssRelation, type OssContribution, type OssMember, type OssRelation } from "./oss";
+import { githubHandle, isOssRelation, mergeOssRows, type OssContribution, type OssMember, type OssRelation, type OssRow } from "./oss";
 import type { Lane } from "./feed";
 import { COLLABORATION_KINDS, PROJECT_MEMORY_KINDS } from "./activity";
 import { buildGitHubActivity, type ActivityPerson, type GitHubActivityEntry } from "./github-activity";
@@ -1796,10 +1796,32 @@ function seedDetail(slug: string): ProjectDetail | null {
 }
 
 /** Rows from `oss_contributions`, by whom. Empty when the table is missing. */
-async function readOssRows(userId?: string): Promise<{ userId: string; repo: string; relation: OssRelation }[]> {
+async function readOssRows(userId?: string): Promise<OssRow[]> {
   const supabase = getPublicSupabase();
   if (!supabase) return [];
 
+  const [typed, merged] = await Promise.all([readTypedOssRows(supabase, userId), readMergedOssRows(supabase, userId)]);
+  return mergeOssRows(typed, merged);
+}
+
+/**
+ * Repositories GitHub says a member had a pull request merged into — only of
+ * members who agreed to be shown, which the table's read policy decides.
+ */
+async function readMergedOssRows(supabase: Supabase, userId?: string): Promise<{ userId: string; repo: string }[]> {
+  let request = supabase.from("github_contributions").select("user_id, repo").order("first_merged_at", { ascending: true }).limit(5000);
+  if (userId) request = request.eq("user_id", userId);
+  const { data, error } = await request;
+  if (error) {
+    // A deploy ahead of 20261027000100_github_contributions.sql keeps the
+    // typed record alone.
+    console.warn(`[ahsan] Verified open source records were skipped: ${error.message}`);
+    return [];
+  }
+  return (data ?? []).map((row) => ({ userId: row.user_id, repo: row.repo }));
+}
+
+async function readTypedOssRows(supabase: Supabase, userId?: string): Promise<{ userId: string; repo: string; relation: OssRelation }[]> {
   let request = supabase
     .from("oss_contributions")
     .select("user_id, repo, relation")
@@ -1835,7 +1857,7 @@ export async function listOssMembers(): Promise<OssMember[]> {
   const [people, rows] = await Promise.all([listPeople(1000), readOssRows()]);
   const byUser = new Map<string, OssContribution[]>();
   for (const row of rows) {
-    byUser.set(row.userId, [...(byUser.get(row.userId) ?? []), { repo: row.repo, relation: row.relation }]);
+    byUser.set(row.userId, [...(byUser.get(row.userId) ?? []), { repo: row.repo, relation: row.relation, manual: row.manual, verified: row.verified }]);
   }
 
   return people.map((person) => ({
@@ -1852,7 +1874,7 @@ export async function listOssContributionsOf(userId: string): Promise<OssContrib
   cacheLife("board");
   cacheTag(tags.oss);
 
-  return (await readOssRows(userId)).map(({ repo, relation }) => ({ repo, relation }));
+  return (await readOssRows(userId)).map(({ repo, relation, manual, verified }) => ({ repo, relation, manual, verified }));
 }
 
 const CATALOGUE_COLUMNS =
