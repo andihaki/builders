@@ -81,7 +81,7 @@ export function nextSteps({
         "Akun yang kamu pakai untuk kirim PR. Fotonya muncul di badge direktori, jadi orang tahu ada teman yang bisa ditanya.",
         "The account you send PRs with. Its picture shows on directory badges, so people know there is a friend to ask.",
       ),
-      href: "/account/profile#contact",
+      href: "/account/profile#github-account",
       cta: tx(locale, "Tambah GitHub", "Add GitHub"),
       done: githubHandle(person.github) !== "",
     },

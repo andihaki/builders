@@ -7,7 +7,6 @@ import { ActivityList, initials, monthYear } from "../../components/pieces";
 import { LinkIcon, type LinkIconKind } from "../../components/link-icons";
 import { PageScrollTop } from "../../components/project-scroll-top";
 import { ShareProfileButton } from "../../components/share-profile-button";
-import { AvailabilityBadges } from "../../components/availability-badges";
 import { OssRecordEmpty, OssRecordList } from "../../components/oss-record";
 import { SubmitButton } from "../../components/submit-button";
 import {
@@ -119,7 +118,6 @@ export default async function ProfilePage({
   const website = safeWebUrl(person.website);
   const linkedin = safeWebUrl(person.linkedin);
   const x = safeWebUrl(person.x);
-  const resume = safeWebUrl(person.resume);
   const publicEmail = safePublicEmail(person.publicEmail);
   const contacts: Array<{ href: string; icon: LinkIconKind; label: string; external: boolean }> = [
     ...(handle ? [{ href: `https://github.com/${handle}`, icon: "github" as const, label: `@${handle}`, external: true }] : []),
@@ -127,7 +125,6 @@ export default async function ProfilePage({
     ...(publicEmail ? [{ href: `mailto:${publicEmail}`, icon: "email" as const, label: publicEmail, external: false }] : []),
     ...(linkedin ? [{ href: linkedin, icon: "linkedin" as const, label: "LinkedIn", external: true }] : []),
     ...(x ? [{ href: x, icon: "x" as const, label: "X", external: true }] : []),
-    ...(resume ? [{ href: resume, icon: "resume" as const, label: tx(locale, "Résumé", "Résumé"), external: true }] : []),
   ];
 
   const trailPath = (next: { trail?: string; limit?: number }) => {
@@ -270,23 +267,6 @@ export default async function ProfilePage({
                         </li>
                       ))}
                     </ul>
-                    {/* Not a trail kind, and the other way round: off until
-                        they turn it on. See 20261024000100_github_activity_opt_in.sql. */}
-                    <fieldset className="gh-consent">
-                      <legend>{tx(locale, "Halaman Aktivitas", "Activity page")}</legend>
-                      <label htmlFor="show-github-activity">
-                        <input id="show-github-activity" type="checkbox" name="github_activity" value="1" defaultChecked={person.githubActivityShown} />
-                        {tx(locale, "Tampilkan aktivitas GitHub-ku di halaman Aktivitas", "Show my GitHub activity on the Activity page")}
-                      </label>
-                      <p className="hint">
-                        {tx(
-                          locale,
-                          "Kalau dicentang, Builders membaca pull request dan jumlah commit publikmu dari GitHub tiap beberapa jam dan menampilkannya di /activity. Hilangkan centangnya kapan saja, dan datanya langsung disembunyikan lalu dihapus.",
-                          "When ticked, Builders reads your public pull requests and commit counts from GitHub every few hours and shows them on /activity. Untick it any time, and they are hidden at once, then deleted.",
-                        )}
-                        {person.github ? null : tx(locale, " Isi dulu username GitHub di profilmu.", " Add your GitHub username to your profile first.")}
-                      </p>
-                    </fieldset>
                     <SubmitButton pendingLabel={tx(locale, "Menyimpan…", "Saving…")}>{tx(locale, "Simpan", "Save")}</SubmitButton>
                   </form>
                 </details>
@@ -301,22 +281,17 @@ export default async function ProfilePage({
                 <p className="pf-bio">{person.bio}</p>
               </section>
             ) : null}
-            {person.skills.length > 0 || person.fields.length > 0 || person.yearsExperience !== null ? (
+            {/* Skills only: experience, fields, opportunity status and the
+                résumé left the profile editor with the talent pool, so they
+                are not shown either — nobody could correct them any more. */}
+            {person.skills.length > 0 ? (
               <section className="pf-card">
                 <h2>{tx(locale, "Keahlian", "Skills")}</h2>
                 <ul className="pf-tags">
-                  {person.yearsExperience !== null ? (
-                    <li>{tx(locale, `${person.yearsExperience} tahun pengalaman`, `${person.yearsExperience} years of experience`)}</li>
-                  ) : null}
-                  {person.fields.map((field) => <li key={`field-${field}`}>{field}</li>)}
                   {person.skills.map((skill) => <li key={`skill-${skill}`}>{skill}</li>)}
                 </ul>
               </section>
             ) : null}
-            <section className="pf-card">
-              <h2>{tx(locale, "Status", "Status")}</h2>
-              <AvailabilityBadges status={person.availability} fields={[]} skills={[]} locale={locale} />
-            </section>
           </aside>
         </div>
       </main>

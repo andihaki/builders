@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { PROFILE_MAXIMUM, validateProfile } from "../app/lib/profile.ts";
+import { PROFILE_MAXIMUM, validateGitHub, validateProfile } from "../app/lib/profile.ts";
 
 const blank = {
   name: "",
@@ -9,15 +9,10 @@ const blank = {
   headline: "",
   bio: "",
   skills: "",
-  yearsExperience: "",
-  fields: "",
-  availability: "open_to_collaboration",
   website: "",
   publicEmail: "",
-  github: "",
   linkedin: "",
   x: "",
-  resume: "",
 };
 
 const named = { ...blank, name: "Zikrul Ihsan" };
@@ -28,7 +23,7 @@ test("only a name is actually required", () => {
 });
 
 test("a link without a scheme is refused rather than silently dropped", () => {
-  for (const field of ["website", "github", "linkedin", "x", "resume"]) {
+  for (const field of ["website", "linkedin", "x"]) {
     const errors = validateProfile({ ...named, [field]: "example.com/page" });
     assert.ok(errors[field], `${field} harus ditolak`);
   }
@@ -37,7 +32,7 @@ test("a link without a scheme is refused rather than silently dropped", () => {
 
 test("a link that is not an ordinary web link is refused too", () => {
   assert.ok(validateProfile({ ...named, website: "javascript:alert(1)" }).website);
-  assert.ok(validateProfile({ ...named, resume: "data:text/plain,x" }).resume);
+  assert.ok(validateProfile({ ...named, linkedin: "data:text/plain,x" }).linkedin);
 });
 
 test("a public email has to look like an address", () => {
@@ -56,16 +51,13 @@ test("the ceilings match the columns the row is stored in", () => {
   assert.deepEqual(validateProfile({ ...named, bio: "a".repeat(PROFILE_MAXIMUM.bio) }), {});
 });
 
-test("years of experience is a whole number, or nothing at all", () => {
-  assert.deepEqual(validateProfile({ ...named, yearsExperience: "" }), {});
-  assert.deepEqual(validateProfile({ ...named, yearsExperience: "5" }), {});
-  assert.ok(validateProfile({ ...named, yearsExperience: "banyak" }).yearsExperience);
-  assert.ok(validateProfile({ ...named, yearsExperience: "-1" }).yearsExperience);
-  assert.ok(validateProfile({ ...named, yearsExperience: "80" }).yearsExperience);
-  assert.ok(validateProfile({ ...named, yearsExperience: "2.5" }).yearsExperience);
-});
-
-test("availability only accepts the public statuses offered by the form", () => {
-  assert.deepEqual(validateProfile({ ...named, availability: "open_to_both" }), {});
-  assert.ok(validateProfile({ ...named, availability: "surprise_me" }).availability);
+test("GitHub takes a username or a profile link, and is stored as the link", () => {
+  assert.deepEqual(validateGitHub(""), { url: "" });
+  assert.deepEqual(validateGitHub("zikrulihsan"), { url: "https://github.com/zikrulihsan" });
+  assert.deepEqual(validateGitHub("@zikrulihsan"), { url: "https://github.com/zikrulihsan" });
+  assert.deepEqual(validateGitHub("https://github.com/zikrulihsan/"), { url: "https://github.com/zikrulihsan" });
+  assert.deepEqual(validateGitHub("github.com/zikrulihsan"), { url: "https://github.com/zikrulihsan" });
+  for (const value of ["https://gitlab.com/zikrulihsan", "https://github.com/zikrulihsan/builders", "bukan username!", "javascript:alert(1)"]) {
+    assert.ok("error" in validateGitHub(value), value);
+  }
 });

@@ -140,7 +140,8 @@ async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) 
         <div className="gh-activity-empty">
           <p>{all.length === 0 ? tx(locale, "Belum ada aktivitas yang tercatat.", "No activity recorded yet.") : tx(locale, "Tidak ada aktivitas untuk saringan ini.", "Nothing matches this filter.")}</p>
           <p>
-            {tx(locale, "Mau muncul di sini? Isi username GitHub di profilmu, lalu centang “Tampilkan aktivitas GitHub-ku” di pengaturan jejak karya.", "Want to show up here? Add your GitHub username to your profile, then tick “Show my GitHub activity” in your work trail settings.")}
+            {tx(locale, "Mau muncul di sini? Isi GitHub-mu dan centang “Tampilkan aktivitas GitHub-ku” di ", "Want to show up here? Add your GitHub and tick “Show my GitHub activity” on ")}
+            <Link href="/account/profile#github-account">{tx(locale, "halaman edit profil", "the edit profile page")}</Link>.
           </p>
         </div>
       ) : (
@@ -162,8 +163,8 @@ async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) 
       <p className="gh-activity-note">
         {tx(
           locale,
-          "Hanya repo publik, dan hanya member yang memilih tampil. Berubah pikiran? Hilangkan centang “Tampilkan aktivitas GitHub-ku” di pengaturan jejak karya profilmu.",
-          "Public repositories only, and only members who chose to be shown. Changed your mind? Untick “Show my GitHub activity” in your profile's work trail settings.",
+          "Hanya repo publik, dan hanya member yang memilih tampil. Berubah pikiran? Hilangkan centang “Tampilkan aktivitas GitHub-ku” di halaman edit profil.",
+          "Public repositories only, and only members who chose to be shown. Changed your mind? Untick “Show my GitHub activity” on the edit profile page.",
         )}
       </p>
     </>
