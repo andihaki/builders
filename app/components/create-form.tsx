@@ -164,6 +164,14 @@ export function CreateForm() {
             </div>
 
             <LinkReading reading={reading} preview={preview} error={previewError} />
+            {/* What the preview already read, so the submit does not read the
+                same page a second time. */}
+            {preview ? (
+              <>
+                <input type="hidden" name="previewedLink" value={preview.requested} />
+                <input type="hidden" name="logoUrl" value={preview.logoUrl} />
+              </>
+            ) : null}
 
             <Field
               key={`title-${prefillKey}`}

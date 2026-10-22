@@ -100,13 +100,18 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
 async function readDirectory(locale: Locale) {
   // GitHub's facts come from the database, read once and shared by catalogue
   // repos and products; nothing on this page calls GitHub.
-  const signalsResult = await readPublicly("repository signals in the directory", () => listRepoSignals(), {});
-  const signals = signalsResult.value;
-  const [reposResult, projectsResult, membersResult] = await Promise.all([
-    readPublicly("open source repos in the directory", () => listOpenSourceRepos(signals), []),
+  // Only the catalogue waits for the signals; the products and the members'
+  // records start at the same time, rather than queueing behind them.
+  const signalsRead = readPublicly("repository signals in the directory", () => listRepoSignals(), {});
+  const [reposResult, projectsResult, membersResult, signalsResult] = await Promise.all([
+    signalsRead.then(({ value }) =>
+      readPublicly("open source repos in the directory", () => listOpenSourceRepos(value), []),
+    ),
     readPublicly("products in the directory", () => listProjects({ lane: "active" }), []),
     readPublicly("members' open source records in the directory", () => listOssMembers(), []),
+    signalsRead,
   ]);
+  const signals = signalsResult.value;
 
   const repos = reposResult.value;
   const members = membersResult.value;

@@ -182,7 +182,8 @@ export async function importGitHubReadme(repoUrl: string): Promise<GitHubImportR
  * not punished for being quick.
  */
 export async function previewProjectLink(rawLink: string): Promise<LinkPreviewResult> {
-  const [viewer, locale] = await Promise.all([currentViewer(), currentLocale()]);
+  // Only whether they are signed in; the profile row would be one more trip.
+  const [viewer, locale] = await Promise.all([viewerId(), currentLocale()]);
   if (!viewer) return { ok: false, error: tx(locale, "Masuk sebelum menambahkan proyek.", "Sign in before adding a project.") };
 
   const link = normaliseLink(rawLink);
@@ -262,9 +263,11 @@ export async function createProject(_state: CreateState, formData: FormData): Pr
   const repoUrl = values.repoUrl || (repoLink ? link : "");
   const liveUrl = values.liveUrl || (link && !repoLink ? link : "");
 
-  // Only read the page when the person has not already named the project — for
-  // anybody who filled the details in themselves there is nothing left to find.
-  const metadata = !link || (values.title && values.tagline && values.logoUrl)
+  // Only read the page when nothing has read it yet. The form's preview already
+  // did, and its name, summary and logo arrive with the submit; reading the
+  // page again would add up to the whole fetch timeout to every submit.
+  const alreadyRead = Boolean(link && values.title && text(formData, "previewedLink") === values.link);
+  const metadata = !link || alreadyRead || (values.title && values.tagline && values.logoUrl)
     ? null
     : await fetchLinkMetadata(link);
   const title = values.title || metadata?.title || (link ? titleFromLink(link) : "");
@@ -389,9 +392,13 @@ export async function createProject(_state: CreateState, formData: FormData): Pr
     return { errors: { form: messageOf(error, locale) }, values };
   }
 
-  seatsChanged(slug);
+  // Tags, not revalidatePath("/"): the directory's project list is tagged
+  // `projects`, and clearing the whole path would also throw away the
+  // catalogue, repository signals and member records it reads, none of which
+  // a new project changes, so the next visit to Home rebuilt all of them.
+  if (values.openSeat === "yes") seatsChanged(slug);
+  else projectChanged(slug);
   trailChanged(viewer, slug);
-  revalidatePath("/");
   redirect(`/projects/${slug}`);
 }
 
