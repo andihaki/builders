@@ -210,6 +210,32 @@ export type RepoSignalRow = {
   last_error: string | null;
 };
 
+/** 20261024000000_github_activity.sql — a member's pull request to somebody else's repository. */
+export type GitHubPullRequestRow = {
+  url: string;
+  user_id: string;
+  /** `owner/name`, lower-cased. */
+  repo: string;
+  number: number;
+  title: string;
+  /** open | merged */
+  state: string;
+  opened_at: string;
+  merged_at: string | null;
+  checked_at: string;
+};
+
+/** 20261024000000_github_activity.sql — commits to a member's own repositories since `since`. */
+export type GitHubCommitSummaryRow = {
+  user_id: string;
+  commits: number;
+  /** Most commits first. */
+  repos: { repo: string; commits: number }[];
+  last_commit_at: string | null;
+  since: string;
+  checked_at: string;
+};
+
 /** 20261021000000_oss_catalogue.sql — the open source catalogue. */
 export type OssRepoRow = {
   id: number;
@@ -327,6 +353,17 @@ export type Database = {
       repo_signals: {
         Row: RepoSignalRow;
         // The service role writes, from the Edge Function; the app only reads.
+        Insert: never;
+        Update: never;
+      };
+      github_pull_requests: {
+        Row: GitHubPullRequestRow;
+        // Written only by the refresh-github-activity Edge Function.
+        Insert: never;
+        Update: never;
+      };
+      github_commit_summaries: {
+        Row: GitHubCommitSummaryRow;
         Insert: never;
         Update: never;
       };

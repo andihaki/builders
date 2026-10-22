@@ -6,6 +6,8 @@ import type {
   CommentRow,
   OssRepoRow,
   EventRow,
+  GitHubCommitSummaryRow,
+  GitHubPullRequestRow,
   ProfileRow,
   ProjectOverviewRow,
   ProposalRow,
@@ -21,6 +23,7 @@ import type { RepoActivity } from "./directory";
 import { githubHandle, isOssRelation, type OssContribution, type OssMember, type OssRelation } from "./oss";
 import type { Lane } from "./feed";
 import { COLLABORATION_KINDS, PROJECT_MEMORY_KINDS } from "./activity";
+import { buildGitHubActivity, type ActivityPerson, type GitHubActivityEntry } from "./github-activity";
 import { availabilityStatus, type AvailabilityStatus } from "./availability";
 import {
   normaliseRole,
@@ -1990,4 +1993,56 @@ export async function isSiteAdmin(): Promise<boolean> {
     return false;
   }
   return data === true;
+}
+
+/** How many pull requests the /activity page reads; the newest, merged or opened. */
+const GITHUB_ACTIVITY_LIMIT = 300;
+
+type PersonColumns = { id: string; username: string; name: string; github: string } | null;
+
+function activityPerson(person: PersonColumns): ActivityPerson | null {
+  if (!person) return null;
+  const handle = githubHandle(person.github);
+  return handle ? { id: person.id, username: person.username, name: person.name, handle } : null;
+}
+
+/**
+ * Members' open source work from GitHub, newest first — see
+ * supabase/functions/refresh-github-activity. Rows of anybody who hid it are
+ * already gone: the tables' read policies check profiles.activity_hidden.
+ *
+ * Tagged with the site-wide trail, which is what changing one's visibility
+ * invalidates; the rows themselves change only in the Edge Function, and the
+ * board's cache life is the backstop for that.
+ */
+export async function listGitHubActivity(): Promise<GitHubActivityEntry[]> {
+  "use cache";
+  cacheLife("board");
+  cacheTag(tags.activity, tags.people);
+
+  const supabase = getPublicSupabase();
+  if (!supabase) return [];
+
+  const person = "person:profiles(id, username, name, github)";
+  const [pullRequests, summaries] = await Promise.all([
+    supabase
+      .from("github_pull_requests")
+      .select(`*, ${person}`)
+      .order("opened_at", { ascending: false })
+      .limit(GITHUB_ACTIVITY_LIMIT),
+    supabase.from("github_commit_summaries").select(`*, ${person}`),
+  ]);
+  const error = pullRequests.error ?? summaries.error;
+  if (error) {
+    // A deploy ahead of 20261024000000_github_activity.sql shows an empty
+    // page, not an error.
+    console.warn(`[ahsan] GitHub activity was skipped: ${error.message}`);
+    return [];
+  }
+
+  type WithPerson<T> = T & { person: PersonColumns };
+  return buildGitHubActivity(
+    ((pullRequests.data ?? []) as WithPerson<GitHubPullRequestRow>[]).map((row) => ({ ...row, person: activityPerson(row.person) })),
+    ((summaries.data ?? []) as WithPerson<GitHubCommitSummaryRow>[]).map((row) => ({ ...row, person: activityPerson(row.person) })),
+  );
 }

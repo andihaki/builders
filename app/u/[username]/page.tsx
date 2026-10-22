@@ -20,7 +20,7 @@ import {
   type Person,
   type ProjectSummary,
 } from "../../lib/data";
-import { EVENT_KINDS, HIGHLIGHT_KINDS, eventKindLabel } from "../../lib/activity";
+import { HIGHLIGHT_KINDS, VISIBILITY_KINDS, visibilityLabel } from "../../lib/activity";
 import { domainOf, projectBlurb } from "../../lib/brief";
 import { nextSteps, remainingSteps } from "../../lib/next-steps";
 import { githubHandle, type OssContribution } from "../../lib/oss";
@@ -261,11 +261,11 @@ export default async function ProfilePage({
                       {tx(locale, "Item yang dicentang muncul di profil publikmu. Item yang tidak dicentang tetap hanya terlihat olehmu—tetap tercatat dan tidak dihapus.", "Checked items appear on your public profile. Unchecked items remain visible only to you—they are still recorded and are not deleted.")}
                     </p>
                     <ul className="kind-list">
-                      {EVENT_KINDS.map((kind) => (
+                      {VISIBILITY_KINDS.map((kind) => (
                         <li key={kind}>
                           <label htmlFor={`show-${kind}`}>
                             <input id={`show-${kind}`} type="checkbox" name="show" value={kind} defaultChecked={!person.activityHidden.includes(kind)} />
-                            {eventKindLabel(kind, locale)}
+                            {visibilityLabel(kind, locale)}
                           </label>
                         </li>
                       ))}

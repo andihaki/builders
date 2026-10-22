@@ -182,12 +182,30 @@ export function activitySentence(event: ActivityLike, locale: Locale = "en"): st
 }
 
 /**
+ * Not a trail kind: somebody's pull requests and commits on GitHub, as the
+ * /activity page shows them. It shares the trail's deny-list so one form
+ * decides everything public about a person's work; see
+ * 20261024000000_github_activity.sql.
+ */
+export const GITHUB_ACTIVITY = "github_activity";
+
+/** Everything the visibility form offers a checkbox for. */
+export const VISIBILITY_KINDS = [...EVENT_KINDS, GITHUB_ACTIVITY] as const;
+
+export function visibilityLabel(kind: (typeof VISIBILITY_KINDS)[number], locale: Locale): string {
+  return kind === GITHUB_ACTIVITY
+    ? tx(locale, "Aktivitas GitHub di halaman Aktivitas", "GitHub activity on the Activity page")
+    : eventKindLabel(kind, locale);
+}
+
+/**
  * The checkbox form submits what should stay visible; the column stores what
  * should not. Anything this build does not know about is left alone, so an
  * older page cannot quietly un-hide a kind it never rendered.
  */
 export function hiddenFrom(shown: string[], current: string[] = []): string[] {
-  const unknown = current.filter((kind) => !isEventKind(kind));
-  const hidden = EVENT_KINDS.filter((kind) => !shown.includes(kind));
+  const known: readonly string[] = VISIBILITY_KINDS;
+  const unknown = current.filter((kind) => !known.includes(kind));
+  const hidden = VISIBILITY_KINDS.filter((kind) => !shown.includes(kind));
   return [...new Set([...hidden, ...unknown])];
 }
