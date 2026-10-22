@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "@/app/components/responsive-link";
 import { redirect } from "next/navigation";
 import { decideProposal, markNoticesSeen } from "../actions";
+import { reactionEmoji } from "../lib/reactions";
 import { SiteFooter, SiteHeader } from "../components/shell";
 import { initials } from "../components/pieces";
 import { RelativeTime } from "../components/relative-time";
@@ -194,6 +195,8 @@ export default async function InboxPage() {
  * sentence still reads, it just stops being a link.
  */
 function NoticeLine({ notice, locale }: { notice: NoticeView; locale: Locale }) {
+  if (notice.kind === "pull_request_reacted") return <ReactionNotice notice={notice} locale={locale} />;
+
   const target = localizeRoleLabel(
     notice.payload.target || (notice.payload.role ? roleLabel(notice.payload.role, "", locale) : ""),
     locale,
@@ -232,6 +235,26 @@ function NoticeLine({ notice, locale }: { notice: NoticeView; locale: Locale }) 
   }
 
   return <p>{tx(locale, "Ada kabar terbaru dari", "There is an update from")} {project}.</p>;
+}
+
+/** Somebody reacted to one of the viewer's pull requests on /activity. */
+function ReactionNotice({ notice, locale }: { notice: NoticeView; locale: Locale }) {
+  const { url, repo, number, title, emoji, actor_name: name, actor_username: username } = notice.payload;
+  const who = username ? <Link href={`/u/${username}`}>{name || `@${username}`}</Link> : <strong>{name || tx(locale, "Seseorang", "Somebody")}</strong>;
+  const pr = url?.startsWith("https://github.com/") ? (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {title || `#${number}`}
+    </a>
+  ) : (
+    <strong>{title || `#${number}`}</strong>
+  );
+  return (
+    <p>
+      {who} {tx(locale, "memberi", "reacted")} {reactionEmoji(emoji ?? "")} {tx(locale, "untuk PR-mu", "to your pull request")} {pr}
+      {repo ? <> {tx(locale, "di", "on")} <strong>{repo}</strong></> : null}.{" "}
+      <Link href="/activity">{tx(locale, "Lihat di Aktivitas", "See it on Activity")}</Link>
+    </p>
+  );
 }
 
 function ApplicationHead({
