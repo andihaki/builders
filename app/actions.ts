@@ -58,6 +58,8 @@ export type CreateState = {
     seatBrief?: string;
     seatCommitment?: string;
     openForGitHubContributions?: string;
+    /** Neither kind of help was asked for, so the directory would not list it. */
+    help?: string;
   };
   values: Record<string, string>;
 };
@@ -202,16 +204,6 @@ export async function previewProjectLink(rawLink: string): Promise<LinkPreviewRe
   };
 }
 
-/** The detail fields an idea has to answer itself, having no page to be read. */
-const REQUIRED_FOR_IDEA = ["tagline", "problem", "solution", "audience"] as const;
-
-const IDEA_PROMPTS: Record<(typeof REQUIRED_FOR_IDEA)[number], (locale: Locale) => string> = {
-  tagline: (locale) => tx(locale, "Tuliskan ringkasan satu kalimat tentang idemu.", "Write a one-line summary of your idea."),
-  problem: (locale) => tx(locale, "Jelaskan masalah yang ingin kamu selesaikan.", "Describe the problem you want to solve."),
-  solution: (locale) => tx(locale, "Jelaskan apa yang sedang atau akan kamu buat.", "Describe what you are making, or plan to make."),
-  audience: (locale) => tx(locale, "Sebutkan untuk siapa proyek ini.", "Say who this project is for."),
-};
-
 /**
  * Adds a project from either an existing link or the owner's description.
  *
@@ -292,17 +284,20 @@ export async function createProject(_state: CreateState, formData: FormData): Pr
     errors.highlight = tx(locale, "Tuliskan deskripsi singkat agar orang memahami idenya.", "Write a short description so people can understand the idea.");
   }
   /*
-   * The brief an idea cannot borrow from anywhere else.
+   * What the project is asking for.
    *
-   * A link submission is allowed to leave every detail blank because its page
-   * answers the same questions; a description-only idea has no page, so the
-   * second step is where it becomes readable to a stranger rather than a name
-   * and a sentence.
+   * The directory lists a product on the code path when it has a GitHub
+   * repository and on the role path when it has an open role — and nowhere
+   * otherwise. A project asking for neither would be saved and then shown to
+   * nobody, so one of the two is required. The rest of the brief can be
+   * written later from the project's edit page.
    */
-  if (entryMethod === "description") {
-    for (const field of REQUIRED_FOR_IDEA) {
-      if (!values[field].trim()) errors[field] = IDEA_PROMPTS[field](locale);
-    }
+  if (values.openSeat !== "yes" && values.openForGitHubContributions !== "yes") {
+    errors.help = tx(
+      locale,
+      "Pilih minimal satu: terima PR di GitHub, atau cari orang untuk sebuah peran. Tanpa itu proyekmu tidak tampil di direktori.",
+      "Choose at least one: take pull requests on GitHub, or look for someone for a role. Without one, your project does not show in the directory.",
+    );
   }
   if (values.openSeat === "yes") {
     if (!isRole(values.seatRole)) errors.seatRole = tx(locale, "Pilih peran yang sedang kamu cari.", "Choose the role you are looking for.");

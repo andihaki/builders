@@ -20,8 +20,8 @@ export const instant = false;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
-    title: tx(locale, "Tambahkan proyekmu — Builders", "Add your project — Builders"),
-    description: tx(locale, "Mulai dari tautan yang sudah ada, atau tulis deskripsi singkat jika proyekmu masih berupa ide.", "Start from an existing link, or write a short description if your project is still an idea."),
+    title: tx(locale, "Tambahkan produkmu — Builders", "Add your product — Builders"),
+    description: tx(locale, "Tampilkan produkmu di direktori dan cari kontributor: lewat pull request di GitHub, atau untuk peran desain, produk, riset, dan lainnya.", "Show your product in the directory and find contributors: through pull requests on GitHub, or for design, product, research and other roles."),
     alternates: { canonical: "/new" },
   };
 }
@@ -35,10 +35,10 @@ export default async function NewProject() {
 
       <main id="main-content" className="page-narrow">
         <p className="eyebrow">
-          <span /> {tx(locale, "Tambahkan proyekmu", "Add your project")}
+          <span /> {tx(locale, "Tambahkan produkmu", "Add your product")}
         </p>
-        <h1>{tx(locale, "Tampilkan proyek atau idemu.", "Show your project or idea.")}</h1>
-        <p className="lede">{tx(locale, "Mulai dari tautan, atau ceritakan idenya jika belum punya tautan.", "Start from a link, or describe the idea if it does not have one yet.")}</p>
+        <h1>{tx(locale, "Cari kontributor untuk produkmu.", "Find contributors for your product.")}</h1>
+        <p className="lede">{tx(locale, "Tempel tautannya, pilih bantuan yang kamu cari, dan produkmu tampil di direktori. Cukup satu menit.", "Paste its link, pick the help you are looking for, and your product shows in the directory. It takes a minute.")}</p>
 
         {viewer ? (
           <CreateForm />
@@ -46,7 +46,7 @@ export default async function NewProject() {
           <SignInInline
             next="/new"
             locale={locale}
-            message={tx(locale, "Masuk dulu untuk menambahkan proyek — kamu kembali ke sini sesudahnya.", "Sign in to add your project — you come straight back here.")}
+            message={tx(locale, "Masuk dulu untuk menambahkan produk — kamu kembali ke sini sesudahnya.", "Sign in to add your product — you come straight back here.")}
           />
         )}
       </main>

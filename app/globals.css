@@ -3110,6 +3110,14 @@ form button[aria-busy="true"]::after,
 .gh-consent label { align-items: center; display: flex; gap: 8px; font-size: 14px; }
 .gh-consent .hint { margin: 6px 0 0; }
 .gh-form { margin-bottom: 28px; }
+/* /new: the switch between starting from a link and describing it. */
+.text-button {
+  background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 600;
+  padding: 0; text-decoration: underline; text-underline-offset: 3px;
+}
+.text-button:hover { color: var(--ink); }
+.new-product-form .help-toggle + .help-toggle, .new-product-form .progressive-panel + .help-toggle { margin-top: 10px; }
+.new-product-form .help-error { margin-top: 12px; }
 .gh-form-actions { align-items: center; display: flex; gap: 12px; margin-top: 14px; }
 .gh-form-saved { color: light-dark(#1a7f37, #57ab5a); font-size: 13.5px; font-weight: 600; }
 
