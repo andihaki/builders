@@ -3,9 +3,12 @@ import { Suspense } from "react";
 import Link from "@/app/components/responsive-link";
 import { SiteFooter, SiteHeader } from "../components/shell";
 import { RelativeTime } from "../components/relative-time";
+import { ReactionBar } from "../components/reaction-bar";
 import { Skeleton } from "../components/skeleton";
 import { shareCard } from "../content";
-import { listGitHubActivity } from "../lib/data";
+import { listActivityReactions, listGitHubActivity } from "../lib/data";
+import { summarizeReactions, type ReactionCount } from "../lib/reactions";
+import { currentViewer } from "../lib/session";
 import {
   NAMED_REPOS,
   filterGitHubActivity,
@@ -96,7 +99,13 @@ export default async function ActivityPage({ searchParams }: { searchParams?: Se
 
 async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) {
   const { filter, limit } = readQuery(await query);
-  const result = await readPublicly<GitHubActivityEntry[]>("github activity", listGitHubActivity, []);
+  const [result, reactionRows, viewer] = await Promise.all([
+    readPublicly<GitHubActivityEntry[]>("github activity", listGitHubActivity, []),
+    readPublicly("activity reactions", listActivityReactions, []),
+    currentViewer(),
+  ]);
+  const reactions = summarizeReactions(reactionRows.value, viewer?.id ?? null);
+  const viewerName = viewer ? viewer.name || viewer.username : null;
   const all = result.value;
   const shown = filterGitHubActivity(all, filter);
   const page = shown.slice(0, limit);
@@ -148,7 +157,11 @@ async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) 
         <ol className="gh-activity-list">
           {page.map((entry) => (
             <li key={entry.key}>
-              {entry.kind === "pull_request" ? <PullRequestItem entry={entry} locale={locale} /> : <CommitSummaryItem entry={entry} locale={locale} />}
+              {entry.kind === "pull_request" ? (
+                <PullRequestItem entry={entry} locale={locale} reactions={reactions[entry.url] ?? []} viewerName={viewerName} />
+              ) : (
+                <CommitSummaryItem entry={entry} locale={locale} />
+              )}
             </li>
           ))}
         </ol>
@@ -194,7 +207,17 @@ function RepoLink({ repo, short = false }: { repo: string; short?: boolean }) {
   );
 }
 
-function PullRequestItem({ entry, locale }: { entry: PullRequestEntry; locale: Locale }) {
+function PullRequestItem({
+  entry,
+  locale,
+  reactions,
+  viewerName,
+}: {
+  entry: PullRequestEntry;
+  locale: Locale;
+  reactions: ReactionCount[];
+  viewerName: string | null;
+}) {
   const merged = entry.state === "merged";
   return (
     <article className="gh-activity-item">
@@ -216,6 +239,7 @@ function PullRequestItem({ entry, locale }: { entry: PullRequestEntry; locale: L
           <span className="gh-activity-title">{entry.title || `#${entry.number}`}</span>
           <span className="gh-activity-number">#{entry.number}</span>
         </a>
+        <ReactionBar url={entry.url} initial={reactions} viewerName={viewerName} />
       </div>
     </article>
   );

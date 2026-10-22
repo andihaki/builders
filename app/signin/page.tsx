@@ -114,7 +114,7 @@ export default async function SignInPage({ searchParams }: { searchParams?: Sear
 
           <p className="signin-privacy">
             {way === "github"
-              ? tx(locale, "Kami menerima nama, email, dan username GitHub-mu, plus izin untuk memberi bintang pada repo — tidak lebih. ", "We receive your name, email, and GitHub username, plus permission to star repositories — nothing more. ")
+              ? tx(locale, "Kami hanya menerima nama, email, dan username GitHub-mu — tidak bisa menyentuh kode atau repo-mu. ", "We only receive your name, email, and GitHub username — nothing that can touch your code or repositories. ")
               : tx(locale, "Kami hanya menerima nama, email, dan foto profilmu. ", "We only receive your name, email, and profile photo. ")}
             <Link href="/privacy">{tx(locale, "Kebijakan Privasi", "Privacy Policy")}</Link>
           </p>

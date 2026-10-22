@@ -3085,6 +3085,26 @@ form button[aria-busy="true"]::after,
 .gh-activity-empty p + p { margin-top: 6px; }
 .gh-activity-empty a { border-bottom: 1px solid currentColor; color: var(--dx-ink); }
 .gh-activity-note { color: var(--dx-faint); font-size: 12px; margin-top: 20px; }
+
+/* Slack's reaction row under a pull request. */
+.reaction-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.reaction-pill, .reaction-add {
+  align-items: center; background: var(--dx-soft); border: 1px solid transparent; border-radius: 999px; color: var(--dx-text);
+  cursor: pointer; display: inline-flex; font: inherit; font-size: 13px; gap: 5px; height: 26px; padding: 0 9px;
+}
+.reaction-pill:hover, .reaction-add:hover { border-color: var(--dx-line); }
+.reaction-pill.is-mine { background: light-dark(#ddf4ff, #12263b); border-color: light-dark(#54aeff, #2f6fb0); color: light-dark(#0969da, #79b8ff); }
+.reaction-count { font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 650; }
+.reaction-add { color: var(--dx-muted); padding: 0 7px; }
+.reaction-add svg { fill: none; height: 16px; stroke: currentColor; stroke-linecap: round; stroke-width: 1.7; width: 16px; }
+.reaction-add-wrap { position: relative; }
+.reaction-picker {
+  background: light-dark(#fff, #26262a); border: 1px solid var(--dx-line); border-radius: 999px; box-shadow: 0 6px 20px light-dark(rgba(9, 9, 11, .12), rgba(0, 0, 0, .4));
+  display: flex; gap: 2px; left: 0; padding: 4px; position: absolute; top: calc(100% + 6px); z-index: 20;
+}
+.reaction-picker button { background: none; border: 0; border-radius: 50%; cursor: pointer; font-size: 18px; height: 34px; width: 34px; }
+.reaction-picker button:hover, .reaction-picker button:focus-visible { background: var(--dx-soft); }
+.reaction-failed { color: light-dark(#cf222e, #f47067); font-size: 12px; }
 .gh-consent { border: 1px solid var(--dx-line); border-radius: 10px; margin: 14px 0; padding: 10px 14px; }
 .gh-consent legend { font-size: 12.5px; font-weight: 650; padding: 0 4px; }
 .gh-consent label { align-items: center; display: flex; gap: 8px; font-size: 14px; }

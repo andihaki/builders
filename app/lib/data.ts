@@ -24,6 +24,7 @@ import { githubHandle, isOssRelation, type OssContribution, type OssMember, type
 import type { Lane } from "./feed";
 import { COLLABORATION_KINDS, PROJECT_MEMORY_KINDS } from "./activity";
 import { buildGitHubActivity, type ActivityPerson, type GitHubActivityEntry } from "./github-activity";
+import type { ReactionRow } from "./reactions";
 import { availabilityStatus, type AvailabilityStatus } from "./availability";
 import {
   normaliseRole,
@@ -2048,4 +2049,38 @@ export async function listGitHubActivity(): Promise<GitHubActivityEntry[]> {
     ((pullRequests.data ?? []) as WithPerson<GitHubPullRequestRow>[]).map((row) => ({ ...row, person: activityPerson(row.person) })),
     ((summaries.data ?? []) as WithPerson<GitHubCommitSummaryRow>[]).map((row) => ({ ...row, person: activityPerson(row.person) })),
   );
+}
+
+/**
+ * Every reaction left on /activity, with the reactor's name for the tooltip.
+ * Shared by everybody, so cached; which ones are the viewer's own is worked
+ * out by the page from these rows and the viewer's id.
+ */
+export async function listActivityReactions(): Promise<ReactionRow[]> {
+  "use cache";
+  cacheLife("board");
+  cacheTag(tags.reactions, tags.people);
+
+  const supabase = getPublicSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("activity_reactions")
+    .select("pull_request_url, user_id, emoji, person:profiles(name)")
+    .order("id", { ascending: true })
+    .limit(5000);
+  if (error) {
+    // A deploy ahead of 20261025000000_activity_reactions.sql shows the
+    // activity without reactions, not an error.
+    console.warn(`[ahsan] Activity reactions were skipped: ${error.message}`);
+    return [];
+  }
+
+  type Row = { pull_request_url: string; user_id: string; emoji: string; person: { name: string } | null };
+  return ((data ?? []) as unknown as Row[]).map((row) => ({
+    pull_request_url: row.pull_request_url,
+    user_id: row.user_id,
+    emoji: row.emoji,
+    name: row.person?.name ?? "",
+  }));
 }

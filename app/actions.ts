@@ -17,6 +17,7 @@ import { isStage, meetsStage, settleStage, type Stage } from "./lib/stages";
 import { TASK_LIMITS, isTaskStatus, validateTask } from "./lib/tasks";
 import { UPDATE_LIMITS, validateUpdate } from "./lib/updates";
 import { hiddenFrom } from "./lib/activity";
+import { isReactionKey } from "./lib/reactions";
 import { getGitHubProjectDraft, isGitHubRepositoryUrl, type GitHubProjectDraft } from "./lib/github";
 import { fetchLinkMetadata, normaliseLink, titleFromLink } from "./lib/link-metadata";
 import { currentViewer, viewerId } from "./lib/session";
@@ -1180,6 +1181,34 @@ export async function saveGitHub(_state: GitHubState, formData: FormData): Promi
   updateTag(tags.activity);
   revalidatePath(`/u/${viewer.username}`);
   return { errors: {}, values: { github: checked.url, shown }, saved: true };
+}
+
+export type ReactionResult = { ok: true } | { ok: false; reason: "signin" | "failed" };
+
+/**
+ * Leaves an emoji on a pull request on /activity, or takes it back if the
+ * viewer already left that one. Who may react to what is the table's
+ * policies' business — the PR has to be one the page shows — and the notice
+ * to the PR's author is a trigger's; see 20261025000000_activity_reactions.sql.
+ */
+export async function setReaction(url: string, emoji: string, on: boolean): Promise<ReactionResult> {
+  if (!isReactionKey(emoji) || !url.startsWith("https://github.com/") || url.length > 500) return { ok: false, reason: "failed" };
+  const viewer = await viewerId();
+  if (!viewer) return { ok: false, reason: "signin" };
+
+  const supabase = await requireSupabase();
+  const { error } = on
+    ? await supabase.from("activity_reactions").insert({ pull_request_url: url, emoji })
+    : await supabase.from("activity_reactions").delete().eq("pull_request_url", url).eq("user_id", viewer).eq("emoji", emoji);
+  // Pressing twice before the first press lands is not a failure: the
+  // reaction is there, which is what was asked for.
+  if (error && error.code !== "23505") {
+    console.warn(`[ahsan] Reaction could not be saved: ${error.message}`);
+    return { ok: false, reason: "failed" };
+  }
+
+  updateTag(tags.reactions);
+  return { ok: true };
 }
 
 /* ------------------------------------------------------------------ *

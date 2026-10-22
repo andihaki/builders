@@ -59,4 +59,6 @@ export const tags = {
   oss: "oss",
   /** The approved open source catalogue the directory lists. */
   catalogue: "catalogue",
+  /** Emoji left on pull requests on /activity. */
+  reactions: "reactions",
 } as const;
