@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "@/app/components/responsive-link";
 import { SiteFooter, SiteHeader } from "../components/shell";
+import { FacetGroup, FacetLink } from "../components/directory-view";
+import { FilterPanel, type ActiveFilter } from "../components/filter-panel";
 import { RelativeTime } from "../components/relative-time";
 import { ReactionBar } from "../components/reaction-bar";
 import { Skeleton } from "../components/skeleton";
@@ -11,14 +13,14 @@ import { summarizeReactions, type ReactionCount } from "../lib/reactions";
 import { currentViewer } from "../lib/session";
 import {
   activityPeople,
+  activityRepos,
   activityStats,
-  entriesOf,
-  filterGitHubActivity,
-  groupByPeriod,
   isGitHubActivityFilter,
+  kindCounts,
   ownerAvatar,
+  queryActivity,
   repoName,
-  type ActivityPeriod,
+  type ActivityQuery,
   type CommitSummaryEntry,
   type GitHubActivityEntry,
   type GitHubActivityFilter,
@@ -41,42 +43,54 @@ export async function generateMetadata(): Promise<Metadata> {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const PAGE_SIZE = 40;
+const PAGE_SIZE = 20;
 /** How many repositories a commit summary names before "+N". */
 const SUMMARY_REPOS = 4;
+/** Repositories shown in the sidebar before the rest fold behind "More…". */
+const REPOS_SHOWN = 8;
 
-type Query = { filter: GitHubActivityFilter; member: string; limit: number };
+type Query = ActivityQuery & { page: number };
+
+const HANDLE = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
+const REPO_KEY = /^[a-z0-9](?:[a-z0-9-]{0,38})\/[a-z0-9._-]{1,100}$/;
 
 function one(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
 function readQuery(query: Record<string, string | string[] | undefined>): Query {
-  const show = one(query.show);
+  const kind = one(query.show);
   const member = one(query.member).trim();
-  const limit = Number(one(query.limit));
+  const repo = one(query.repo).trim().toLowerCase();
+  const page = Number(one(query.page));
   return {
-    filter: isGitHubActivityFilter(show) ? show : "all",
-    member: /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(member) ? member : "",
-    limit: Number.isInteger(limit) && limit > PAGE_SIZE ? Math.min(limit, 1000) : PAGE_SIZE,
+    kind: isGitHubActivityFilter(kind) ? kind : "all",
+    member: HANDLE.test(member) ? member : "",
+    repo: REPO_KEY.test(repo) ? repo : "",
+    q: one(query.q).slice(0, 100),
+    page: Number.isInteger(page) && page > 1 ? page : 1,
   };
 }
 
-function pathFor({ filter, member, limit }: Partial<Query>): string {
+/** The address for a query; changing any filter goes back to page one. */
+function pathFor(query: Partial<Query>, page = 1): string {
   const params = new URLSearchParams();
-  if (filter && filter !== "all") params.set("show", filter);
-  if (member) params.set("member", member);
-  if (limit && limit > PAGE_SIZE) params.set("limit", String(limit));
+  if (query.kind && query.kind !== "all") params.set("show", query.kind);
+  if (query.member) params.set("member", query.member);
+  if (query.repo) params.set("repo", query.repo);
+  if (query.q?.trim()) params.set("q", query.q.trim());
+  if (page > 1) params.set("page", String(page));
   const search = params.toString();
   return `/activity${search ? `?${search}` : ""}`;
 }
 
 /**
- * What members have been doing in open source, read from GitHub.
+ * What members have been doing in open source, read from GitHub — laid out
+ * like the directory: a short heading with its numbers, filters down the
+ * side, and the list doing the talking.
  *
  * Nobody writes these entries: the refresh-github-activity Edge Function asks
- * GitHub every few hours, for members who chose to be shown. That is the
- * point of the page — it is evidence, not a claim.
+ * GitHub every few hours, for members who chose to be shown.
  */
 export default async function ActivityPage({ searchParams }: { searchParams?: SearchParams }) {
   const query = searchParams ?? Promise.resolve({});
@@ -86,23 +100,9 @@ export default async function ActivityPage({ searchParams }: { searchParams?: Se
     <>
       <SiteHeader returnTo={query.then((values) => pathFor(readQuery(values)))} active="activity" />
 
-      <main id="main-content" className="page-narrow gh-activity-page">
-        <header className="gh-activity-hero">
-          <p className="eyebrow">
-            <span /> {tx(locale, "Aktivitas", "Activity")}
-          </p>
-          <h1>{tx(locale, "Kontribusi open source teman-teman.", "Our members' open source work.")}</h1>
-          <p className="gh-activity-lede">
-            {tx(
-              locale,
-              "Langsung dari GitHub, diperbarui tiap beberapa jam. Beri reaksi untuk merayakan PR yang masuk.",
-              "Straight from GitHub, refreshed every few hours. React to cheer on a pull request that landed.",
-            )}
-          </p>
-        </header>
-
-        <Suspense fallback={<FeedSkeleton />}>
-          <Feed query={query} locale={locale} />
+      <main id="main-content" className="dx-page">
+        <Suspense fallback={<ActivitySkeleton locale={locale} />}>
+          <ActivityBody query={query} locale={locale} />
         </Suspense>
       </main>
 
@@ -111,7 +111,28 @@ export default async function ActivityPage({ searchParams }: { searchParams?: Se
   );
 }
 
-async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) {
+function Heading({ locale, children }: { locale: Locale; children?: React.ReactNode }) {
+  return (
+    <header className="dx-head">
+      <div>
+        <h1>{tx(locale, "Aktivitas open source", "Open source activity")}</h1>
+        <p>
+          {tx(
+            locale,
+            "Pull request dan commit member, langsung dari GitHub tiap beberapa jam. ",
+            "Members' pull requests and commits, straight from GitHub every few hours. ",
+          )}
+          <Link className="ax-head-link" href="/account/profile#github-account">
+            {tx(locale, "Tampilkan punyamu", "Show yours")}
+          </Link>
+        </p>
+      </div>
+      {children}
+    </header>
+  );
+}
+
+async function ActivityBody({ query, locale }: { query: SearchParams; locale: Locale }) {
   const current = readQuery(await query);
   const [result, reactionRows, viewer] = await Promise.all([
     readPublicly<GitHubActivityEntry[]>("github activity", listGitHubActivity, []),
@@ -123,151 +144,230 @@ async function Feed({ query, locale }: { query: SearchParams; locale: Locale }) 
 
   const all = result.value;
   const stats = activityStats(all);
+  const kinds = kindCounts(all);
   const people = activityPeople(all);
-  const mine = entriesOf(all, current.member);
-  const shown = filterGitHubActivity(mine, current.filter);
-  const page = shown.slice(0, current.limit);
-  const runs = groupByPeriod(page, new Date());
+  const repos = activityRepos(all);
+  const matched = queryActivity(all, current);
+  const pages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
+  const page = Math.min(current.page, pages);
+  const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const filtered = current.kind !== "all" || Boolean(current.member || current.repo || current.q.trim());
 
-  const tabs: { filter: GitHubActivityFilter; label: string }[] = [
-    { filter: "all", label: tx(locale, "Semua", "All") },
-    { filter: "merged", label: "Merged" },
-    { filter: "open", label: tx(locale, "Direview", "In review") },
+  const kindLabels: Record<GitHubActivityFilter, string> = {
+    all: tx(locale, "Semua", "All"),
+    merged: tx(locale, "PR merged", "Merged PRs"),
+    open: tx(locale, "PR direview", "PRs in review"),
+    commits: tx(locale, "Repo sendiri", "Own repos"),
+  };
+  const memberName = people.find(({ person }) => person.handle.toLowerCase() === current.member.toLowerCase())?.person.name;
+  const active: ActiveFilter[] = [
+    ...(current.kind !== "all" ? [{ label: kindLabels[current.kind], href: pathFor({ ...current, kind: "all" }) }] : []),
+    ...(current.member ? [{ label: memberName || `@${current.member}`, href: pathFor({ ...current, member: "" }) }] : []),
+    ...(current.repo ? [{ label: current.repo, href: pathFor({ ...current, repo: "" }) }] : []),
   ];
 
   return (
     <>
-      {result.unavailable ? (
-        <p className="public-data-notice" role="status">
-          {tx(locale, "Aktivitas belum dapat dimuat.", "The activity could not be loaded.")} <a href={pathFor(current)}>{tx(locale, "Muat ulang", "Reload")}</a>.
-        </p>
-      ) : null}
+      <Heading locale={locale}>
+        <dl className="dx-head-stats">
+          <div>
+            <dt>{tx(locale, "Member aktif", "Active members")}</dt>
+            <dd>{stats.people}</dd>
+          </div>
+          <div>
+            <dt>{tx(locale, "PR merged", "PRs merged")}</dt>
+            <dd>{stats.merged}</dd>
+          </div>
+          <div>
+            <dt>{tx(locale, "Repo dikontribusi", "Repos contributed to")}</dt>
+            <dd>{stats.repos}</dd>
+          </div>
+        </dl>
+      </Heading>
 
-      <dl className="gh-activity-stats">
-        <Stat value={stats.people} label={tx(locale, "Member aktif", stats.people === 1 ? "Active member" : "Active members")} />
-        <Stat value={stats.merged} label={tx(locale, "PR merged", stats.merged === 1 ? "PR merged" : "PRs merged")} />
-        <Stat value={stats.open} label={tx(locale, "Sedang direview", "In review")} />
-        <Stat value={stats.repos} label={tx(locale, "Repo dikontribusi", stats.repos === 1 ? "Repo contributed to" : "Repos contributed to")} />
-      </dl>
+      <div className="dx-layout">
+        <FilterPanel active={active}>
+          <FacetGroup title={tx(locale, "Jenis", "Kind")}>
+            {(["all", "merged", "open", "commits"] as const).map((kind) => (
+              <FacetLink
+                key={kind}
+                active={current.kind === kind}
+                href={pathFor({ ...current, kind: current.kind === kind && kind !== "all" ? "all" : kind })}
+                count={kinds[kind]}
+                icon={kind === "all" ? undefined : <KindIcon kind={kind} />}
+              >
+                {kindLabels[kind]}
+              </FacetLink>
+            ))}
+          </FacetGroup>
 
-      <div className="gh-activity-filters">
-        <nav className="pf-trail-modes" aria-label={tx(locale, "Saring jenis", "Filter by kind")}>
-          {tabs.map((tab) => (
-            <Link
-              key={tab.filter}
-              className={tab.filter === current.filter ? "is-active" : ""}
-              href={pathFor({ ...current, filter: tab.filter, limit: undefined })}
-              aria-current={tab.filter === current.filter ? "page" : undefined}
+          {people.length > 0 ? (
+            <FacetGroup title={tx(locale, "Member", "Members")} more={tx(locale, "Member lainnya…", "More members…")}>
+              {people.map(({ person, count }) => {
+                const on = person.handle.toLowerCase() === current.member.toLowerCase();
+                return (
+                  <FacetLink
+                    key={person.id}
+                    active={on}
+                    href={pathFor({ ...current, member: on ? "" : person.handle })}
+                    count={count}
+                    icon={<Avatar handle={person.handle} size={18} />}
+                  >
+                    {person.name || `@${person.handle}`}
+                  </FacetLink>
+                );
+              })}
+            </FacetGroup>
+          ) : null}
+
+          {repos.length > 0 ? (
+            <FacetGroup
+              title={tx(locale, "Repo tujuan PR", "PRs went to")}
+              more={repos.length > REPOS_SHOWN ? tx(locale, "Repo lainnya…", "More repos…") : undefined}
+              openMore={repos.findIndex(({ repo }) => repo === current.repo) >= REPOS_SHOWN}
             >
-              {tab.label}
-            </Link>
-          ))}
-        </nav>
-
-        {people.length > 1 ? (
-          <nav className="gh-member-chips" aria-label={tx(locale, "Saring member", "Filter by member")}>
-            {current.member ? (
-              <Link className="gh-member-chip is-plain" href={pathFor({ ...current, member: "", limit: undefined })}>
-                {tx(locale, "Semua member", "Everyone")}
-              </Link>
-            ) : null}
-            {people.map(({ person, count }) => {
-              const active = person.handle.toLowerCase() === current.member.toLowerCase();
-              return (
-                <Link
-                  key={person.id}
-                  className={`gh-member-chip ${active ? "is-active" : ""}`}
-                  href={pathFor({ ...current, member: active ? "" : person.handle, limit: undefined })}
-                  aria-current={active ? "page" : undefined}
+              {repos.map(({ repo, count }) => (
+                <FacetLink
+                  key={repo}
+                  active={current.repo === repo}
+                  href={pathFor({ ...current, repo: current.repo === repo ? "" : repo })}
+                  count={count}
+                  // eslint-disable-next-line @next/next/no-img-element -- the repository owner's GitHub picture
+                  icon={<img className="ax-facet-avatar" src={ownerAvatar(repo, 36)} alt="" width={18} height={18} loading="lazy" />}
                 >
-                  <Avatar handle={person.handle} size={20} />
-                  {person.name || `@${person.handle}`}
-                  {count > 0 ? <span className="gh-member-count">{count}</span> : null}
-                </Link>
-              );
-            })}
-          </nav>
-        ) : null}
-      </div>
+                  {repo}
+                </FacetLink>
+              ))}
+            </FacetGroup>
+          ) : null}
+        </FilterPanel>
 
-      {page.length === 0 ? (
-        <div className="gh-activity-empty">
-          <p>{all.length === 0 ? tx(locale, "Belum ada aktivitas yang tercatat.", "No activity recorded yet.") : tx(locale, "Tidak ada aktivitas untuk saringan ini.", "Nothing matches this filter.")}</p>
-          <p>
-            {tx(locale, "Mau muncul di sini? Isi GitHub-mu dan centang “Tampilkan aktivitas GitHub-ku” di ", "Want to show up here? Add your GitHub and tick “Show my GitHub activity” on ")}
-            <Link href="/account/profile#github-account">{tx(locale, "halaman edit profil", "the edit profile page")}</Link>.
-          </p>
-        </div>
-      ) : (
-        runs.map((run) => (
-          <section key={run.period} className="gh-activity-run" aria-labelledby={`run-${run.period}`}>
-            <h2 id={`run-${run.period}`} className="gh-activity-run-title">
-              {periodLabel(run.period, locale)}
-            </h2>
-            <ol className="gh-activity-list">
-              {run.entries.map((entry) => (
+        <section className="dx-results" aria-label={tx(locale, "Aktivitas", "Activity")}>
+          <div className="dx-toolbar">
+            <form className="dx-search" action="/activity" role="search">
+              {current.kind !== "all" ? <input type="hidden" name="show" value={current.kind} /> : null}
+              {current.member ? <input type="hidden" name="member" value={current.member} /> : null}
+              {current.repo ? <input type="hidden" name="repo" value={current.repo} /> : null}
+              <label>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                <span className="sr-only">{tx(locale, "Cari aktivitas", "Search activity")}</span>
+                <input type="search" name="q" defaultValue={current.q} placeholder={tx(locale, "Cari judul PR, repo, atau nama…", "Search PR titles, repos, or names…")} />
+              </label>
+            </form>
+            <p className="dx-count" role="status">
+              <strong>{matched.length}</strong> {tx(locale, "aktivitas", "entries")}
+              {filtered ? <> · <Link href="/activity">reset</Link></> : null}
+            </p>
+          </div>
+
+          {result.unavailable ? (
+            <p className="public-data-notice" role="status">
+              {tx(locale, "Aktivitas belum dapat dimuat.", "The activity could not be loaded.")} <a href={pathFor(current, page)}>{tx(locale, "Muat ulang", "Reload")}</a>.
+            </p>
+          ) : null}
+
+          {shown.length === 0 ? (
+            <div className="dx-empty ax-empty">
+              <p>
+                {all.length === 0
+                  ? tx(locale, "Belum ada aktivitas yang tercatat. ", "No activity recorded yet. ")
+                  : tx(locale, "Tidak ada aktivitas yang cocok. ", "No activity matches. ")}
+                {filtered ? <Link href="/activity">{tx(locale, "Reset filter", "Reset filters")}</Link> : null}
+              </p>
+              <p>
+                {tx(locale, "Mau muncul di sini? Isi GitHub-mu dan centang “Tampilkan aktivitas GitHub-ku” di ", "Want to show up here? Add your GitHub and tick “Show my GitHub activity” on ")}
+                <Link href="/account/profile#github-account">{tx(locale, "halaman edit profil", "the edit profile page")}</Link>.
+              </p>
+            </div>
+          ) : (
+            <ol className="ax-list">
+              {shown.map((entry) => (
                 <li key={entry.key}>
                   {entry.kind === "pull_request" ? (
-                    <PullRequestItem entry={entry} locale={locale} reactions={reactions[entry.url] ?? []} viewerName={viewerName} />
+                    <PullRequestRow entry={entry} locale={locale} reactions={reactions[entry.url] ?? []} viewerName={viewerName} />
                   ) : (
-                    <CommitSummaryItem entry={entry} locale={locale} reactions={reactions[entry.key] ?? []} viewerName={viewerName} />
+                    <CommitSummaryRow entry={entry} locale={locale} reactions={reactions[entry.key] ?? []} viewerName={viewerName} />
                   )}
                 </li>
               ))}
             </ol>
-          </section>
-        ))
-      )}
+          )}
 
-      {shown.length > page.length ? (
-        <p className="trail-more">
-          <Link href={pathFor({ ...current, limit: current.limit + PAGE_SIZE })}>{tx(locale, "Muat aktivitas sebelumnya", "Load earlier activity")}</Link>
-        </p>
-      ) : null}
+          {pages > 1 ? (
+            <nav className="dx-pager" aria-label={tx(locale, "Halaman", "Pages")}>
+              {page > 1 ? (
+                <Link href={pathFor(current, page - 1)} rel="prev">
+                  <span aria-hidden="true">←</span> {tx(locale, "Sebelumnya", "Previous")}
+                </Link>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+              <p>{tx(locale, `Halaman ${page} dari ${pages}`, `Page ${page} of ${pages}`)}</p>
+              {page < pages ? (
+                <Link href={pathFor(current, page + 1)} rel="next">
+                  {tx(locale, "Berikutnya", "Next")} <span aria-hidden="true">→</span>
+                </Link>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+            </nav>
+          ) : null}
 
-      <p className="gh-activity-note">
-        {tx(
-          locale,
-          "Hanya repo publik, dan hanya member yang memilih tampil. Mau ikut tampil, atau berubah pikiran? Atur di ",
-          "Public repositories only, and only members who chose to be shown. Want to join, or changed your mind? Set it on ",
-        )}
-        <Link href="/account/profile#github-account">{tx(locale, "halaman edit profil", "the edit profile page")}</Link>.
-      </p>
+          <p className="ax-note">
+            {tx(locale, "Hanya repo publik, dan hanya member yang memilih tampil.", "Public repositories only, and only members who chose to be shown.")}
+          </p>
+        </section>
+      </div>
     </>
   );
 }
 
-function periodLabel(period: ActivityPeriod, locale: Locale): string {
-  if (period === "week") return tx(locale, "Minggu ini", "This week");
-  if (period === "month") return tx(locale, "Bulan ini", "This month");
-  return tx(locale, "Sebelumnya", "Earlier");
+function KindIcon({ kind }: { kind: Exclude<GitHubActivityFilter, "all"> }) {
+  if (kind === "commits") {
+    return (
+      <svg className="dx-track-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3.5" />
+        <path d="M3 12h5.5M15.5 12H21" />
+      </svg>
+    );
+  }
+  return <PullRequestIcon merged={kind === "merged"} />;
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function PullRequestIcon({ merged }: { merged: boolean }) {
   return (
-    <div className="gh-stat">
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
+    <svg className={`ax-pr-icon ${merged ? "is-merged" : "is-open"}`} viewBox="0 0 16 16" aria-hidden="true">
+      {merged ? (
+        <path d="M4.25 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM11.75 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 5v6M4.25 5c0 3 3 4 7.5 4v2" />
+      ) : (
+        <path d="M4.25 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM11.75 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 5v6M11.75 11V6.5a2 2 0 0 0-2-2H7.5M9 3 7.5 4.5 9 6" />
+      )}
+    </svg>
   );
 }
 
-function Avatar({ handle, size = 36 }: { handle: string; size?: number }) {
+function Avatar({ handle, size }: { handle: string; size: number }) {
   // GitHub serves a small avatar at this address for any username, the same
   // way the directory's badges show faces.
   // eslint-disable-next-line @next/next/no-img-element
-  return <img className="gh-activity-avatar" src={`https://github.com/${encodeURIComponent(handle)}.png?size=${size * 2}`} alt="" width={size} height={size} loading="lazy" />;
+  return <img className="ax-avatar" src={`https://github.com/${encodeURIComponent(handle)}.png?size=${size * 2}`} alt="" width={size} height={size} loading="lazy" />;
 }
 
 function Who({ entry }: { entry: GitHubActivityEntry }) {
   return (
-    <Link className="gh-activity-who" href={`/u/${entry.person.username}`}>
+    <Link className="ax-who" href={`/u/${entry.person.username}`}>
+      <Avatar handle={entry.person.handle} size={16} />
       {entry.person.name || `@${entry.person.handle}`}
     </Link>
   );
 }
 
-function PullRequestItem({
+/**
+ * A pull request as a directory row: the repository is the subject, as on the
+ * directory — its owner's picture and name — then the PR's title, then who
+ * and when, and the reactions.
+ */
+function PullRequestRow({
   entry,
   locale,
   reactions,
@@ -280,45 +380,37 @@ function PullRequestItem({
 }) {
   const merged = entry.state === "merged";
   return (
-    <article className={`gh-activity-item ${merged ? "is-merged" : "is-open"}`}>
-      <Avatar handle={entry.person.handle} />
-      <div className="gh-activity-body">
-        <p className="gh-activity-line">
-          <Who entry={entry} /> {merged ? tx(locale, "PR-nya di-merge", "got a pull request merged") : tx(locale, "membuka pull request", "opened a pull request")}
-          <span className="gh-activity-time">
-            {" · "}
-            <RelativeTime value={entry.at} locale={locale} />
+    <article className="ax-row">
+      {/* eslint-disable-next-line @next/next/no-img-element -- the repository owner's GitHub picture */}
+      <img className="ax-logo" src={ownerAvatar(entry.repo, 80)} alt="" width={36} height={36} loading="lazy" />
+      <div className="ax-main">
+        <p className="ax-name">
+          <a href={`https://github.com/${entry.repo}`} target="_blank" rel="noopener noreferrer">
+            {entry.repo}
+          </a>
+          <span className={`ax-state ${merged ? "is-merged" : "is-open"}`}>
+            <PullRequestIcon merged={merged} />
+            {merged ? "Merged" : tx(locale, "Direview", "In review")}
           </span>
         </p>
-
-        <a className="gh-activity-pr" href={entry.url} target="_blank" rel="noopener noreferrer">
-          <span className={`gh-pr-icon ${merged ? "is-merged" : "is-open"}`} aria-hidden="true">
-            <svg viewBox="0 0 16 16">
-              {merged ? (
-                <path d="M4.25 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM11.75 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 5v6M4.25 5c0 3 3 4 7.5 4v2" />
-              ) : (
-                <path d="M4.25 2.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM11.75 11a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM4.25 5v6M11.75 11V6.5a2 2 0 0 0-2-2H7.5M9 3 7.5 4.5 9 6" />
-              )}
-            </svg>
-          </span>
-          <span className="gh-pr-main">
-            <span className="gh-activity-title">{entry.title || `#${entry.number}`}</span>
-            <span className="gh-pr-repo">
-              {/* eslint-disable-next-line @next/next/no-img-element -- the repository owner's GitHub picture */}
-              <img src={ownerAvatar(entry.repo)} alt="" width={16} height={16} loading="lazy" />
-              {entry.repo} <span className="gh-activity-number">#{entry.number}</span>
-            </span>
-          </span>
-          <span className={`gh-activity-state ${merged ? "is-merged" : "is-open"}`}>{merged ? "Merged" : tx(locale, "Direview", "In review")}</span>
+        <a className="ax-title" href={entry.url} target="_blank" rel="noopener noreferrer">
+          {entry.title || `#${entry.number}`} <span className="ax-number">#{entry.number}</span>
         </a>
-
-        <ReactionBar url={entry.url} initial={reactions} viewerName={viewerName} />
+        <div className="ax-meta">
+          <Who entry={entry} />
+          <span>
+            {merged ? tx(locale, "di-merge ", "merged ") : tx(locale, "dibuka ", "opened ")}
+            <RelativeTime value={entry.at} locale={locale} />
+          </span>
+          <ReactionBar url={entry.url} initial={reactions} viewerName={viewerName} />
+        </div>
       </div>
     </article>
   );
 }
 
-function CommitSummaryItem({
+/** Work on one's own repositories, one row per person. */
+function CommitSummaryRow({
   entry,
   locale,
   reactions,
@@ -332,45 +424,54 @@ function CommitSummaryItem({
   const named = entry.repos.slice(0, SUMMARY_REPOS);
   const more = entry.repos.length - named.length;
   return (
-    <article className="gh-activity-item is-summary">
-      <Avatar handle={entry.person.handle} />
-      <div className="gh-activity-body">
-        <p className="gh-activity-line">
-          <Who entry={entry} />{" "}
+    <article className="ax-row is-summary">
+      <Avatar handle={entry.person.handle} size={36} />
+      <div className="ax-main">
+        <p className="ax-name">
+          <Link href={`/u/${entry.person.username}`}>{entry.person.name || `@${entry.person.handle}`}</Link>
+          <span className="ax-state is-commits">{tx(locale, "Repo sendiri", "Own repos")}</span>
+        </p>
+        <p className="ax-title is-plain">
           {tx(
             locale,
-            `membuat ${entry.commits} commit di ${entry.repos.length} repo miliknya`,
-            `made ${entry.commits} ${entry.commits === 1 ? "commit" : "commits"} across ${entry.repos.length} of their own ${entry.repos.length === 1 ? "repo" : "repos"}`,
+            `${entry.commits} commit di ${entry.repos.length} repo dalam 30 hari terakhir`,
+            `${entry.commits} ${entry.commits === 1 ? "commit" : "commits"} across ${entry.repos.length} ${entry.repos.length === 1 ? "repo" : "repos"} in the last 30 days`,
           )}
-          <span className="gh-activity-time">
-            {" · "}
-            {tx(locale, "30 hari terakhir", "last 30 days")}
-          </span>
         </p>
-        <ul className="gh-repo-chips">
-          {named.map((repo) => (
-            <li key={repo.repo}>
-              <a href={`https://github.com/${repo.repo}`} target="_blank" rel="noopener noreferrer">
-                {repoName(repo.repo)}
-              </a>
-              <span className="gh-repo-commits">{repo.commits}</span>
-            </li>
-          ))}
-          {more > 0 ? <li className="gh-repo-more">+{more}</li> : null}
-        </ul>
-        {/* Keyed `commits:<user_id>`, the entry's own key. */}
-        <ReactionBar url={entry.key} initial={reactions} viewerName={viewerName} />
+        <div className="ax-meta">
+          <ul className="ax-repos">
+            {named.map((repo) => (
+              <li key={repo.repo}>
+                <a href={`https://github.com/${repo.repo}`} target="_blank" rel="noopener noreferrer">
+                  {repoName(repo.repo)}
+                </a>
+                <span>{repo.commits}</span>
+              </li>
+            ))}
+            {more > 0 ? <li className="ax-repos-more">+{more}</li> : null}
+          </ul>
+          <ReactionBar url={entry.key} initial={reactions} viewerName={viewerName} />
+        </div>
       </div>
     </article>
   );
 }
 
-function FeedSkeleton() {
+function ActivitySkeleton({ locale }: { locale: Locale }) {
   return (
-    <div className="gh-activity-list" aria-hidden="true">
-      {Array.from({ length: 4 }, (_, index) => (
-        <Skeleton key={index} height={96} />
-      ))}
-    </div>
+    <>
+      <Heading locale={locale} />
+      <div className="dx-layout" aria-busy="true">
+        <div className="dx-side">
+          <Skeleton height={220} style={{ borderRadius: 8 }} />
+        </div>
+        <div className="dx-results">
+          <Skeleton height={40} style={{ borderRadius: 8, marginBottom: 14 }} />
+          {[0, 1, 2, 3, 4].map((slot) => (
+            <Skeleton key={slot} height={96} style={{ borderRadius: 12, marginBottom: 8 }} />
+          ))}
+        </div>
+      </div>
+    </>
   );
 }

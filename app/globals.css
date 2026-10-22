@@ -3052,91 +3052,55 @@ form button[aria-busy="true"]::after,
 .pf-note { color: var(--dx-faint); font-size: 12px; margin: -4px 0 12px; }
 .pf-trail { border: 1px solid var(--dx-line); border-radius: 12px; padding: 4px 16px; }
 
-.gh-activity-page { max-width: 820px; }
-/* /activity: members' open source work from GitHub, laid out like GitHub's
-   own feed — the person and what happened, then the pull request as a card. */
-.gh-activity-hero h1 { margin-bottom: 10px; }
-.gh-activity-lede { color: var(--dx-muted); font-size: 16px; line-height: 1.6; margin: 0 0 24px; }
+/* /activity, laid out like the directory: the dx-page heading, layout,
+   sidebar and toolbar, and rows in the same cards. The repository leads a
+   pull request's row the way it leads a directory row. */
+.ax-head-link { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--dx-line); text-underline-offset: 3px; }
+.ax-head-link:hover { text-decoration-color: currentColor; }
+.ax-avatar { border-radius: 50%; flex: none; }
+.ax-facet-avatar { border-radius: 4px; flex: none; }
+.ax-pr-icon { fill: none; flex: none; height: 16px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; width: 16px; }
+.ax-pr-icon.is-merged { color: light-dark(#8250df, #b392f0); }
+.ax-pr-icon.is-open { color: light-dark(#1a7f37, #57ab5a); }
 
-.gh-activity-stats { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 18px; }
-.gh-stat { background: light-dark(#fff, #1f1f1f); border: 1px solid var(--dx-line); border-radius: 12px; padding: 12px 14px; }
-.gh-stat dt { color: var(--dx-muted); font-size: 12.5px; }
-.gh-stat dd { color: var(--dx-ink); font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -.02em; margin: 2px 0 0; }
-
-.gh-activity-filters { display: grid; gap: 10px; margin-bottom: 22px; }
-.gh-activity-filters .pf-trail-modes { justify-self: start; }
-.gh-member-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.gh-member-chip {
-  align-items: center; border: 1px solid var(--dx-line); border-radius: 999px; color: var(--dx-text); display: inline-flex;
-  font-size: 13px; font-weight: 600; gap: 6px; padding: 3px 10px 3px 4px;
+.ax-list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.ax-row {
+  align-items: flex-start; background: light-dark(#fff, #1f1f1f); border: 1px solid var(--dx-line); border-radius: 12px;
+  display: flex; gap: 14px; padding: 14px 18px; transition: border-color .15s ease, box-shadow .15s ease;
 }
-.gh-member-chip.is-plain { padding-left: 10px; }
-.gh-member-chip:hover { border-color: light-dark(#c3ccd5, #4e4e54); }
-.gh-member-chip.is-active { background: var(--dx-ink); border-color: var(--dx-ink); color: light-dark(#fff, #09090b); }
-.gh-member-chip .gh-activity-avatar { height: 20px; width: 20px; }
-.gh-member-count { color: var(--dx-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.gh-member-chip.is-active .gh-member-count { color: inherit; opacity: .7; }
-
-.gh-activity-run + .gh-activity-run { margin-top: 26px; }
-.gh-activity-run-title { color: var(--dx-muted); font-size: 12.5px; font-weight: 650; letter-spacing: .04em; margin: 0 0 10px; text-transform: uppercase; }
-.gh-activity-list { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
-.gh-activity-item {
-  align-items: flex-start; background: light-dark(#fff, #1f1f1f); border: 1px solid var(--dx-line); border-radius: 14px;
-  display: flex; gap: 12px; padding: 14px 16px;
-}
-.gh-activity-avatar { border-radius: 50%; flex: none; height: 36px; width: 36px; }
-.gh-activity-body { flex: 1; min-width: 0; }
-.gh-activity-line { color: var(--dx-text); font-size: 14px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
-.gh-activity-who { color: var(--dx-ink); font-weight: 650; }
-.gh-activity-who:hover, .gh-activity-pr:hover .gh-activity-title { text-decoration: underline; }
-.gh-activity-time { color: var(--dx-muted); font-size: 12.5px; }
-
-.gh-activity-pr {
-  align-items: flex-start; border: 1px solid var(--dx-line); border-radius: 10px; color: var(--dx-ink); display: flex; gap: 10px;
-  margin-top: 8px; padding: 10px 12px;
-}
-.gh-activity-pr:hover { border-color: light-dark(#c3ccd5, #4e4e54); }
-.gh-pr-icon { flex: none; height: 16px; margin-top: 2px; width: 16px; }
-.gh-pr-icon svg { fill: none; height: 16px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; width: 16px; }
-.gh-pr-icon.is-merged { color: light-dark(#8250df, #b392f0); }
-.gh-pr-icon.is-open { color: light-dark(#1a7f37, #57ab5a); }
-.gh-pr-main { display: grid; flex: 1; gap: 3px; min-width: 0; }
-.gh-activity-title { font-size: 14.5px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
-/* Plain text with the owner's picture inline, so a long repository name
-   wraps like words instead of stacking picture, name and number. */
-.gh-pr-repo { color: var(--dx-muted); font-size: 12.5px; overflow-wrap: anywhere; }
-.gh-pr-repo img { border-radius: 4px; display: inline-block; height: 16px; margin-right: 5px; vertical-align: -3px; width: 16px; }
-.gh-activity-number { color: var(--dx-faint); font-variant-numeric: tabular-nums; }
-.gh-activity-state { border-radius: 999px; flex: none; font-size: 11.5px; font-weight: 650; padding: 2px 8px; }
-.gh-activity-state.is-merged { background: light-dark(#f3eefe, #2c2340); color: light-dark(#8250df, #b392f0); }
-.gh-activity-state.is-open { background: light-dark(#e8f5ec, #1d2f23); color: light-dark(#1a7f37, #57ab5a); }
-
-.gh-activity-item.is-summary { background: var(--dx-soft); }
-.gh-repo-chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 8px 0 0; padding: 0; }
-.gh-repo-chips li {
-  align-items: center; background: light-dark(#fff, #1f1f1f); border: 1px solid var(--dx-line); border-radius: 999px;
-  display: inline-flex; font-size: 12.5px; gap: 6px; padding: 2px 4px 2px 10px;
-}
-.gh-repo-chips a { color: light-dark(#0969da, #4493f8); font-weight: 600; }
-.gh-repo-chips a:hover { text-decoration: underline; }
-.gh-repo-commits { background: var(--dx-soft); border-radius: 999px; color: var(--dx-muted); font-size: 11.5px; font-variant-numeric: tabular-nums; font-weight: 650; padding: 0 7px; }
-.gh-repo-chips .gh-repo-more { color: var(--dx-muted); padding-right: 10px; }
-
-.gh-activity-empty { border: 1px dashed var(--dx-line); border-radius: 12px; color: var(--dx-muted); font-size: 14px; padding: 20px; }
-.gh-activity-empty p { margin: 0; }
-.gh-activity-empty p + p { margin-top: 6px; }
-.gh-activity-empty a, .gh-activity-note a { border-bottom: 1px solid currentColor; color: var(--dx-ink); }
-.gh-activity-note { color: var(--dx-faint); font-size: 12px; margin-top: 24px; }
+.ax-row:hover { border-color: light-dark(#d4d4d8, #38373a); box-shadow: 0 6px 18px light-dark(rgba(9, 9, 11, .06), rgba(0, 0, 0, .12)); }
+.ax-logo, .ax-row > .ax-avatar { border-radius: 8px; flex: none; height: 36px; width: 36px; }
+.ax-row > .ax-avatar { border-radius: 50%; }
+.ax-main { flex: 1; min-width: 0; }
+.ax-name { align-items: center; display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 0; }
+.ax-name a { color: light-dark(#0969da, #4493f8); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.ax-name a:hover { text-decoration: underline; }
+.ax-state { align-items: center; border-radius: 999px; display: inline-flex; font-size: 11.5px; font-weight: 650; gap: 4px; padding: 1px 8px 1px 6px; }
+.ax-state .ax-pr-icon { height: 13px; width: 13px; }
+.ax-state.is-merged { background: light-dark(#f3eefe, #2c2340); color: light-dark(#8250df, #b392f0); }
+.ax-state.is-open { background: light-dark(#e8f5ec, #1d2f23); color: light-dark(#1a7f37, #57ab5a); }
+.ax-state.is-commits { background: var(--dx-soft); color: var(--dx-muted); padding-left: 8px; }
+.ax-title { color: var(--dx-ink); display: block; font-size: 14px; line-height: 1.45; margin: 4px 0 0; overflow-wrap: anywhere; }
+a.ax-title:hover { text-decoration: underline; }
+.ax-title.is-plain { color: var(--dx-text); }
+.ax-number { color: var(--dx-faint); font-variant-numeric: tabular-nums; }
+.ax-meta { align-items: center; color: var(--dx-muted); display: flex; flex-wrap: wrap; font-size: 12.5px; gap: 6px 14px; margin-top: 8px; }
+.ax-meta .reaction-bar { margin-top: 0; }
+.ax-who { align-items: center; color: var(--dx-text); display: inline-flex; font-weight: 600; gap: 6px; }
+.ax-who:hover { color: var(--dx-ink); text-decoration: underline; }
+.ax-repos { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.ax-repos li { align-items: center; border: 1px solid var(--dx-line); border-radius: 999px; display: inline-flex; gap: 6px; padding: 1px 4px 1px 9px; }
+.ax-repos a { color: light-dark(#0969da, #4493f8); font-weight: 600; }
+.ax-repos a:hover { text-decoration: underline; }
+.ax-repos li span { background: var(--dx-soft); border-radius: 999px; font-size: 11px; font-variant-numeric: tabular-nums; font-weight: 650; padding: 0 6px; }
+.ax-repos .ax-repos-more { padding-right: 9px; }
+.ax-empty { display: grid; gap: 6px; }
+.ax-empty p { margin: 0; }
+.ax-note { color: var(--dx-faint); font-size: 12px; margin: 18px 0 0; }
 
 @media (max-width: 640px) {
-  .gh-activity-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .gh-activity-item { padding: 12px; }
-  .gh-activity-avatar { height: 28px; width: 28px; }
-  /* The title gets the whole line; the state drops beneath it, in line
-     with the title rather than the icon. */
-  .gh-activity-pr { flex-wrap: wrap; row-gap: 6px; }
-  .gh-pr-main { flex-basis: calc(100% - 26px); }
-  .gh-activity-state { margin-left: 26px; }
+  .ax-row { gap: 12px; padding: 12px 14px; }
+  .ax-logo, .ax-row > .ax-avatar { height: 30px; width: 30px; }
 }
 
 /* Slack's reaction row under a pull request. */

@@ -37,10 +37,15 @@ export type CommitSummaryEntry = {
 
 export type GitHubActivityEntry = PullRequestEntry | CommitSummaryEntry;
 
-export type GitHubActivityFilter = "all" | "merged" | "open";
+/** What kind of entry: a merged PR, one in review, or work on one's own repositories. */
+export type GitHubActivityFilter = "all" | "merged" | "open" | "commits";
 
 export function isGitHubActivityFilter(value: string): value is GitHubActivityFilter {
-  return value === "all" || value === "merged" || value === "open";
+  return value === "all" || value === "merged" || value === "open" || value === "commits";
+}
+
+function kindOf(entry: GitHubActivityEntry): Exclude<GitHubActivityFilter, "all"> {
+  return entry.kind === "commit_summary" ? "commits" : entry.state;
 }
 
 /** How many of a summary's repositories are named before "and N more". */
@@ -83,21 +88,50 @@ export function buildGitHubActivity(
   return entries.sort((a, b) => b.at.localeCompare(a.at) || a.key.localeCompare(b.key));
 }
 
-/** The entries one filter keeps: commit summaries only belong to "all". */
-export function filterGitHubActivity(entries: GitHubActivityEntry[], filter: GitHubActivityFilter): GitHubActivityEntry[] {
-  if (filter === "all") return entries;
-  return entries.filter((entry) => entry.kind === "pull_request" && entry.state === filter);
-}
-
 /** The short name a summary shows: `builders` for zikrulihsan/builders. */
 export function repoName(repo: string): string {
   return repo.slice(repo.indexOf("/") + 1);
 }
 
-/** The entries of one member, by GitHub handle, case-blind; all of them for "". */
-export function entriesOf(entries: GitHubActivityEntry[], handle: string): GitHubActivityEntry[] {
-  const wanted = handle.toLowerCase();
-  return wanted ? entries.filter((entry) => entry.person.handle.toLowerCase() === wanted) : entries;
+export type ActivityQuery = { kind: GitHubActivityFilter; member: string; repo: string; q: string };
+
+/** The repositories an entry touches: its PR's, or every one in a summary. */
+function reposOf(entry: GitHubActivityEntry): string[] {
+  return entry.kind === "pull_request" ? [entry.repo] : entry.repos.map((each) => each.repo);
+}
+
+/**
+ * The feed as the sidebar and the search box ask for it. Each part narrows on
+ * its own; empty means "any". The search reads the PR's title, the
+ * repositories and the person's name and handle.
+ */
+export function queryActivity(entries: GitHubActivityEntry[], query: ActivityQuery): GitHubActivityEntry[] {
+  const member = query.member.toLowerCase();
+  const needle = query.q.trim().toLowerCase();
+  return entries.filter((entry) => {
+    if (query.kind !== "all" && kindOf(entry) !== query.kind) return false;
+    if (member && entry.person.handle.toLowerCase() !== member) return false;
+    if (query.repo && !reposOf(entry).includes(query.repo)) return false;
+    if (!needle) return true;
+    const haystack = [entry.kind === "pull_request" ? entry.title : "", ...reposOf(entry), entry.person.name, entry.person.handle]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+/** How many entries of each kind, for the sidebar. */
+export function kindCounts(entries: GitHubActivityEntry[]): Record<GitHubActivityFilter, number> {
+  const counts: Record<GitHubActivityFilter, number> = { all: entries.length, merged: 0, open: 0, commits: 0 };
+  for (const entry of entries) counts[kindOf(entry)] += 1;
+  return counts;
+}
+
+/** Repositories pull requests went to, most first: the sidebar's repository group. */
+export function activityRepos(entries: GitHubActivityEntry[]): { repo: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const entry of entries) if (entry.kind === "pull_request") counts.set(entry.repo, (counts.get(entry.repo) ?? 0) + 1);
+  return [...counts].map(([repo, count]) => ({ repo, count })).sort((a, b) => b.count - a.count || a.repo.localeCompare(b.repo));
 }
 
 /** Everybody on the page, most active first: the member filter's chips. */
@@ -123,24 +157,6 @@ export function activityStats(entries: GitHubActivityEntry[]): ActivityStats {
     open: pullRequests.filter((entry) => entry.state === "open").length,
     repos: new Set(pullRequests.map((entry) => entry.repo)).size,
   };
-}
-
-export type ActivityPeriod = "week" | "month" | "earlier";
-
-/**
- * The feed in three runs — this week, this month, earlier — keeping the
- * order within each, and leaving out the runs with nothing in them. `now`
- * is passed in so the page and the tests agree on what "this week" is.
- */
-export function groupByPeriod(entries: GitHubActivityEntry[], now: Date): { period: ActivityPeriod; entries: GitHubActivityEntry[] }[] {
-  const week = now.getTime() - 7 * 86_400_000;
-  const month = now.getTime() - 30 * 86_400_000;
-  const groups: Record<ActivityPeriod, GitHubActivityEntry[]> = { week: [], month: [], earlier: [] };
-  for (const entry of entries) {
-    const at = Date.parse(entry.at);
-    groups[at >= week ? "week" : at >= month ? "month" : "earlier"].push(entry);
-  }
-  return (["week", "month", "earlier"] as const).filter((period) => groups[period].length > 0).map((period) => ({ period, entries: groups[period] }));
 }
 
 /** The repository owner's GitHub picture, the same address the directory uses. */

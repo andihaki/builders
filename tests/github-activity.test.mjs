@@ -7,7 +7,7 @@ import {
   githubHandle,
   parseResponse,
 } from "../supabase/functions/refresh-github-activity/activity.ts";
-import { buildGitHubActivity, filterGitHubActivity } from "../app/lib/github-activity.ts";
+import { buildGitHubActivity, queryActivity } from "../app/lib/github-activity.ts";
 import { githubHandle as appGithubHandle } from "../app/lib/oss.ts";
 
 const now = new Date("2026-10-22T00:00:00.000Z");
@@ -106,7 +106,7 @@ test("members go to GitHub in batches", () => {
   assert.deepEqual(chunk(members, BATCH_SIZE).map((batch) => batch.length), [BATCH_SIZE, BATCH_SIZE, 1]);
 });
 
-test("the feed puts newest first and filters keep summaries out of merged and open", () => {
+test("the feed puts newest first, and the sidebar and search narrow it", () => {
   const person = { id: ana.id, username: "ana", name: "Ana", handle: "ana" };
   const entries = buildGitHubActivity(
     [
@@ -122,12 +122,16 @@ test("the feed puts newest first and filters keep summaries out of merged and op
     `commits:${ana.id}`,
     "https://github.com/org/tool/pull/8",
   ]);
-  assert.deepEqual(filterGitHubActivity(entries, "merged").map((entry) => entry.key), ["https://github.com/org/tool/pull/7"]);
-  assert.deepEqual(filterGitHubActivity(entries, "open").map((entry) => entry.key), ["https://github.com/org/tool/pull/8"]);
+  const any = { kind: "all", member: "", repo: "", q: "" };
+  assert.deepEqual(queryActivity(entries, { ...any, kind: "merged" }).map((entry) => entry.key), ["https://github.com/org/tool/pull/7"]);
+  assert.deepEqual(queryActivity(entries, { ...any, kind: "open" }).map((entry) => entry.key), ["https://github.com/org/tool/pull/8"]);
+  assert.deepEqual(queryActivity(entries, { ...any, kind: "commits" }).map((entry) => entry.key), [`commits:${ana.id}`]);
+  assert.deepEqual(queryActivity(entries, { ...any, repo: "ana/side" }).map((entry) => entry.key), [`commits:${ana.id}`]);
+  assert.deepEqual(queryActivity(entries, { ...any, q: "DOCS" }).map((entry) => entry.key), ["https://github.com/org/tool/pull/8"]);
 });
 
-test("the page's numbers, member chips and time runs come from the same entries", async () => {
-  const { activityPeople, activityStats, entriesOf, groupByPeriod } = await import("../app/lib/github-activity.ts");
+test("the page's numbers and the sidebar's groups come from the same entries", async () => {
+  const { activityPeople, activityRepos, activityStats, kindCounts } = await import("../app/lib/github-activity.ts");
   const ana = { id: "a", username: "ana", name: "Ana", handle: "Ana" };
   const budi = { id: "b", username: "budi", name: "Budi", handle: "budi" };
   const pr = (key, person, repo, state, at) => ({ kind: "pull_request", key, person, repo, url: key, number: 1, title: "", state, at });
@@ -138,11 +142,9 @@ test("the page's numbers, member chips and time runs come from the same entries"
     { kind: "commit_summary", key: "c", person: budi, commits: 4, repos: [], since: "", at: "2026-10-20T00:00:00Z" },
   ];
   assert.deepEqual(activityStats(entries), { people: 2, merged: 2, open: 1, repos: 2 });
+  assert.deepEqual(kindCounts(entries), { all: 4, merged: 2, open: 1, commits: 1 });
+  assert.deepEqual(activityRepos(entries), [{ repo: "org/a", count: 2 }, { repo: "org/b", count: 1 }]);
   assert.deepEqual(activityPeople(entries).map(({ person, count }) => [person.handle, count]), [["Ana", 2], ["budi", 1]]);
-  assert.deepEqual(entriesOf(entries, "ana").map((entry) => entry.key), ["1", "2"]);
-  assert.equal(entriesOf(entries, "").length, 4);
-  const runs = groupByPeriod(entries, new Date("2026-10-22T00:00:00Z"));
-  assert.deepEqual(runs.map(({ period, entries }) => [period, entries.map((entry) => entry.key)]), [["week", ["1", "c"]], ["month", ["2"]], ["earlier", ["3"]]]);
 });
 
 test("merged pull requests become lasting contributions and pending suggestions", async () => {
