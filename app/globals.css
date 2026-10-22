@@ -2826,7 +2826,14 @@ form button[aria-busy="true"]::after,
 @media (max-width: 640px) {
   .dx-page { padding-top: 22px; }
   .dx-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-bottom: 16px; }
-  .dx-head-stats { display: none; }
+  /* One quiet line on a phone — "15 repos  14 products  144 registered" —
+     enough to show the place is alive without pushing the list down. */
+  /* Spaced rather than dotted, so a line that wraps does not start with a
+     stray separator. */
+  .dx-head-stats { flex-wrap: wrap; gap: 2px 16px; }
+  .dx-head-stats div { align-items: baseline; flex-direction: row-reverse; gap: 4px; }
+  .dx-head-stats dd { font-size: 14px; letter-spacing: 0; line-height: 1.4; }
+  .dx-head-stats dt { font-size: 13px; }
   .dx-head h1 { font-size: 22px; }
   .dx-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
   .dx-search { max-width: none; }
