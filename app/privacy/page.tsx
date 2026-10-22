@@ -41,7 +41,7 @@ export default async function PrivacyPage() {
         <h3>{tx(locale, "Profil (publik dan opsional)", "Profile (public and optional)")}</h3>
         <p>
           {tx(locale, "Selain nama, setiap kolom di", "Other than your name, every field on")} <Link href="/account/profile">/account/profile</Link>{" "}
-          {tx(locale, "boleh diisi atau dilewati: profesi, perkenalan singkat, bio, keahlian, bidang, pengalaman, serta tautan kontak. Status peluangmu juga bersifat publik. Kolom yang diisi akan muncul di profil publik dan dapat ditemukan melalui", "can be filled in or skipped: profession, introduction, bio, skills, fields, experience, and contact links. Your opportunity status is also public. Filled fields appear on your public profile and can be found through the")} <Link href="/people">Talent Pool</Link>.
+          {tx(locale, "boleh diisi atau dilewati: akun GitHub, profesi, perkenalan singkat, bio, keahlian, serta tautan kontak. Kolom yang diisi akan muncul di profil publik dan dapat ditemukan melalui", "can be filled in or skipped: your GitHub account, profession, introduction, bio, skills, and contact links. Filled fields appear on your public profile and can be found through the")} <Link href="/people">Talent Pool</Link>.
         </p>
 
         <h3>{tx(locale, "Proyek dan kolaborasi", "Projects and collaboration")}</h3>

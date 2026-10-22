@@ -3,6 +3,7 @@ import Link from "@/app/components/responsive-link";
 import { redirect } from "next/navigation";
 import { SiteFooter, SiteHeader } from "../../components/shell";
 import { ProfileForm, type EditableProfile } from "../../components/profile-form";
+import { GitHubForm } from "../../components/github-form";
 import { listOssContributionsOf, listPeople } from "../../lib/data";
 import { OssAddForm, OssRecordEmpty, OssRecordList } from "../../components/oss-record";
 import { githubHandle } from "../../lib/oss";
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
   return {
     title: tx(locale, "Edit profil — Builders", "Edit profile — Builders"),
-    description: tx(locale, "Edit profil, keahlian, dan tautan kontakmu di Builders.", "Edit your profile, skills, and contact links on Builders."),
+    description: tx(locale, "Atur akun GitHub, kontribusi open source, dan profilmu di Builders.", "Set your GitHub account, open source contributions, and profile on Builders."),
     robots: { index: false },
   };
 }
@@ -61,14 +62,21 @@ export default async function EditProfilePage({
         </p>
         <h1>{tx(locale, "Lengkapi profilmu.", "Complete your profile.")}</h1>
         <p className="lede">
-          {tx(locale, "Inilah yang dilihat orang di ", "This is what people see on ")}<Link href={`/u/${viewer.username}`}>{tx(locale, "halaman portofoliomu", "your portfolio page")}</Link>{" "}
-          {tx(locale, "dan digunakan untuk menemukanmu di ", "and use to find you in the ")}<Link href="/people">talent pool</Link>{tx(locale, ", tempat recruiter, hiring manager, dan pembangun tim mencari talent berdasarkan bukti pengalaman. Kamu dapat memperbaruinya kapan saja.", ", where recruiters, hiring managers, and team builders look for talent through proof of experience. You can update it at any time.")}
+          {tx(locale, "Yang paling penting ada di atas: akun GitHub dan repo yang pernah kamu kontribusi—dari situ badge di direktori dibuat. Sisanya tampil di ", "What matters most comes first: your GitHub account and the repos you have contributed to—the directory's badges are built from them. The rest shows on ")}
+          <Link href={`/u/${viewer.username}`}>{tx(locale, "profilmu", "your profile")}</Link>.{" "}
+          {tx(locale, "Setiap bagian disimpan sendiri-sendiri.", "Each section saves on its own.")}
         </p>
 
-        {/* First, because it is what the directory is built from: every repo
-            listed here becomes a badge on that repo's row. */}
+        {/* First, because the directory is built from it: the badge faces,
+            the evidence links and the Activity page all read this account.
+            A form of its own, since the open source record below is one too. */}
+        <GitHubForm github={handle ? `https://github.com/${handle}` : viewer.github} shown={viewer.githubActivityShown} />
+
+        {/* Second: every repo listed here becomes a badge on that repo's row. */}
         <section id="open-source" className="oss-editor" aria-labelledby="oss-editor-title">
-          <h2 id="oss-editor-title">{tx(locale, "Kontribusi open source", "Open source contributions")}</h2>
+          <h2 id="oss-editor-title" className="is-step">
+            <span className="step-number">2</span> {tx(locale, "Kontribusi open source", "Open source contributions")}
+          </h2>
           <p>
             {tx(
               locale,
@@ -78,8 +86,8 @@ export default async function EditProfilePage({
           </p>
           {!handle ? (
             <p className="oss-editor-note">
-              {tx(locale, "Isi GitHub-mu di bawah supaya fotomu muncul di badge dan orang bisa melihat PR-mu.", "Add your GitHub below so your picture shows on badges and people can see your PRs.")}{" "}
-              <a href="#contact">{tx(locale, "Isi GitHub", "Add GitHub")}</a>
+              {tx(locale, "Isi GitHub-mu di atas supaya fotomu muncul di badge dan orang bisa melihat PR-mu.", "Add your GitHub above so your picture shows on badges and people can see your PRs.")}{" "}
+              <a href="#github-account">{tx(locale, "Isi GitHub", "Add GitHub")}</a>
             </p>
           ) : null}
           {records.value.length > 0 ? (
@@ -93,7 +101,6 @@ export default async function EditProfilePage({
         <ProfileForm
           profile={toEditable(viewer)}
           skillSuggestions={termSuggestions(people.value, "skills")}
-          fieldSuggestions={termSuggestions(people.value, "fields")}
           returnTo={returnTo}
         />
 
@@ -115,14 +122,9 @@ function toEditable(viewer: Viewer): EditableProfile {
     headline: viewer.headline,
     bio: viewer.bio,
     skills: viewer.skills.join(", "),
-    yearsExperience: viewer.yearsExperience === null ? "" : String(viewer.yearsExperience),
-    fields: viewer.fields.join(", "),
-    availability: viewer.availability,
     website: viewer.website,
     publicEmail: viewer.publicEmail,
-    github: viewer.github,
     linkedin: viewer.linkedin,
     x: viewer.x,
-    resume: viewer.resume,
   };
 }

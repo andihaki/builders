@@ -11,7 +11,7 @@
  */
 
 import { isHttpUrl } from "./brief";
-import { isAvailabilityStatus } from "./availability";
+import { githubHandle } from "./oss";
 import { tx, type Locale } from "./locale";
 
 export const PROFILE_MAXIMUM = {
@@ -30,27 +30,29 @@ export const PROFILE_LIMITS = {
   yearsExperience: 60,
 } as const;
 
-/** The raw form values, before skills and fields are split into lists. */
+/**
+ * The raw form values, before skills are split into a list.
+ *
+ * Only what the site shows today. Years of experience, fields, opportunity
+ * status and a résumé link belonged to the talent pool, which left the menu
+ * with the directory redesign; the columns stay, and saving this form leaves
+ * them as they were. GitHub has a form of its own — see `validateGitHub`.
+ */
 export type ProfileInput = {
   name: string;
   profession: string;
   headline: string;
   bio: string;
   skills: string;
-  yearsExperience: string;
-  fields: string;
-  availability: string;
   website: string;
   publicEmail: string;
-  github: string;
   linkedin: string;
   x: string;
-  resume: string;
 };
 
 export type ProfileFieldErrors = Partial<Record<keyof ProfileInput, string>>;
 
-const LINK_FIELDS = ["website", "github", "linkedin", "x", "resume"] as const;
+const LINK_FIELDS = ["website", "linkedin", "x"] as const;
 
 const LABELS: Record<keyof ProfileInput, string> = {
   name: "Name",
@@ -58,15 +60,10 @@ const LABELS: Record<keyof ProfileInput, string> = {
   headline: "Your one-line introduction",
   bio: "Short bio",
   skills: "Skills",
-  yearsExperience: "Years of experience",
-  fields: "Fields of expertise",
-  availability: "Opportunity status",
   website: "Website",
   publicEmail: "Public email",
-  github: "GitHub",
   linkedin: "LinkedIn",
   x: "X / Twitter",
-  resume: "Résumé link",
 };
 
 const TEXT_CEILINGS = {
@@ -100,18 +97,6 @@ export function validateProfile(input: ProfileInput, locale: Locale = "en"): Pro
     }
   }
 
-  const experience = input.yearsExperience.trim();
-  if (experience) {
-    const years = Number(experience);
-    if (!Number.isInteger(years) || years < 0 || years > PROFILE_LIMITS.yearsExperience) {
-      errors.yearsExperience = tx(locale, `Masukkan bilangan bulat dari 0 hingga ${PROFILE_LIMITS.yearsExperience}, atau biarkan kosong.`, `Enter a whole number from 0 to ${PROFILE_LIMITS.yearsExperience}, or leave this blank.`);
-    }
-  }
-
-  if (!isAvailabilityStatus(input.availability)) {
-    errors.availability = tx(locale, "Pilih status peluang yang valid.", "Choose a valid opportunity status.");
-  }
-
   for (const field of LINK_FIELDS) {
     const value = input[field].trim();
     if (!value) continue;
@@ -132,6 +117,30 @@ export function validateProfile(input: ProfileInput, locale: Locale = "en"): Pro
   return errors;
 }
 
+/**
+ * The GitHub account as it is stored: `https://github.com/<handle>`, or empty.
+ *
+ * A username, an `@username` or a profile URL all work — people paste
+ * whichever they have open. Anything that is not plainly one GitHub account
+ * is refused rather than stored, because the directory's badges, the
+ * Activity page and the profile picture are all built from it.
+ */
+export function validateGitHub(value: string, locale: Locale = "en"): { url: string } | { error: string } {
+  const raw = value.trim();
+  if (!raw) return { url: "" };
+  const handle = githubHandle(raw);
+  if (!handle) {
+    return {
+      error: tx(
+        locale,
+        "Isi username GitHub-mu (misalnya zikrulihsan) atau tautan profilnya.",
+        "Enter your GitHub username (for example zikrulihsan) or a link to your profile.",
+      ),
+    };
+  }
+  return { url: `https://github.com/${handle}` };
+}
+
 export function isEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -147,15 +156,10 @@ function labelId(field: keyof ProfileInput): string {
     headline: "Perkenalan singkat",
     bio: "Bio singkat",
     skills: "Keahlian",
-    yearsExperience: "Lama pengalaman",
-    fields: "Bidang keahlian",
-    availability: "Status peluang",
     website: "Situs web",
     publicEmail: "Email publik",
-    github: "GitHub",
     linkedin: "LinkedIn",
     x: "X / Twitter",
-    resume: "Tautan résumé",
   };
   return labels[field];
 }

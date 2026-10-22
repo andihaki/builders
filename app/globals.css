@@ -2938,6 +2938,8 @@ form button[aria-busy="true"]::after,
   scroll-margin-top: calc(var(--header-h) + 16px);
 }
 .oss-editor h2 { color: var(--dx-ink); font-size: 18px; font-weight: 650; letter-spacing: -.02em; margin: 0 0 4px; }
+/* Numbered like the profile form's steps around it. */
+.oss-editor h2.is-step { align-items: center; display: flex; gap: 10px; margin-bottom: 8px; }
 .oss-editor > p { color: var(--dx-muted); font-size: 14px; line-height: 1.55; margin: 0 0 14px; }
 .oss-editor .oss-editor-note { background: var(--dx-warm-soft); border-radius: 8px; color: var(--dx-warm); padding: 9px 12px; }
 .oss-editor-note a { color: inherit; font-weight: 650; text-decoration: underline; }
@@ -3087,6 +3089,9 @@ form button[aria-busy="true"]::after,
 .gh-consent legend { font-size: 12.5px; font-weight: 650; padding: 0 4px; }
 .gh-consent label { align-items: center; display: flex; gap: 8px; font-size: 14px; }
 .gh-consent .hint { margin: 6px 0 0; }
+.gh-form { margin-bottom: 28px; }
+.gh-form-actions { align-items: center; display: flex; gap: 12px; margin-top: 14px; }
+.gh-form-saved { color: light-dark(#1a7f37, #57ab5a); font-size: 13.5px; font-weight: 600; }
 
 .pf-products { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .pf-products li {

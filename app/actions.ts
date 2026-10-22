@@ -29,6 +29,7 @@ import {
   PROFILE_LIMITS,
   PROFILE_MAXIMUM,
   isEmail,
+  validateGitHub,
   validateProfile,
   type ProfileFieldErrors,
   type ProfileInput,
@@ -1063,10 +1064,7 @@ export async function setActivityVisibility(formData: FormData): Promise<void> {
   const supabase = await requireSupabase();
   const { error } = await supabase
     .from("profiles")
-    .update({
-      activity_hidden: hiddenFrom(shown, viewer.activityHidden),
-      github_activity_shown: formData.get("github_activity") === "1",
-    })
+    .update({ activity_hidden: hiddenFrom(shown, viewer.activityHidden) })
     .eq("id", viewer.id);
   if (error) throw new Error(error.message);
 
@@ -1098,15 +1096,10 @@ export async function updateProfile(
     headline: text(formData, "headline"),
     bio: text(formData, "bio"),
     skills: text(formData, "skills"),
-    yearsExperience: text(formData, "yearsExperience"),
-    fields: text(formData, "fields"),
-    availability: text(formData, "availability"),
     website: text(formData, "website"),
     publicEmail: text(formData, "publicEmail"),
-    github: text(formData, "github"),
     linkedin: text(formData, "linkedin"),
     x: text(formData, "x"),
-    resume: text(formData, "resume"),
   };
 
   const [viewer, locale] = await Promise.all([currentViewer(), currentLocale()]);
@@ -1117,12 +1110,6 @@ export async function updateProfile(
   const errors = validateProfile(values, locale);
   if (Object.keys(errors).length > 0) return { errors, values };
 
-  const rawExperience = values.yearsExperience;
-  const yearsExperience =
-    rawExperience === ""
-      ? null
-      : Math.max(0, Math.min(Number(rawExperience), PROFILE_LIMITS.yearsExperience));
-
   const supabase = await requireSupabase();
   const { error } = await supabase
     .from("profiles")
@@ -1132,15 +1119,13 @@ export async function updateProfile(
       headline: values.headline.slice(0, PROFILE_MAXIMUM.headline),
       bio: values.bio.slice(0, PROFILE_MAXIMUM.bio),
       skills: normalisePeopleTerms(values.skills, PROFILE_LIMITS.skills),
-      years_experience: yearsExperience,
-      fields: normalisePeopleTerms(values.fields, PROFILE_LIMITS.fields),
-      availability_status: values.availability,
+      // Not here on purpose: years_experience, fields, availability_status
+      // and resume_url left the form with the talent pool, so a save leaves
+      // whatever is stored in them alone. github has its own form below.
       website: profileUrl(values.website),
       public_email: profileEmail(values.publicEmail),
-      github: profileUrl(values.github),
       linkedin: profileUrl(values.linkedin),
       x_url: profileUrl(values.x),
-      resume_url: profileUrl(values.resume),
     })
     .eq("id", viewer.id);
   if (error) return { errors: { form: error.message }, values };
@@ -1152,6 +1137,49 @@ export async function updateProfile(
   revalidatePath("/people");
   revalidatePath("/get-started");
   redirect(returnTo ?? `/u/${viewer.username}?saved=1`);
+}
+
+export type GitHubState = {
+  errors: { github?: string; form?: string };
+  values: { github: string; shown: boolean };
+  saved?: boolean;
+};
+
+/**
+ * Saves the GitHub account, and whether its activity may be shown on
+ * /activity.
+ *
+ * Its own form at the top of /account/profile, because the open source record
+ * sits between it and the rest of the profile and forms cannot nest. The yes
+ * to /activity goes with the account it is about: without an account there
+ * is nothing to show, so clearing the account clears the yes too, and a new
+ * account later starts from no.
+ */
+export async function saveGitHub(_state: GitHubState, formData: FormData): Promise<GitHubState> {
+  const values = { github: text(formData, "github"), shown: formData.get("github_activity") === "1" };
+  const [viewer, locale] = await Promise.all([currentViewer(), currentLocale()]);
+  if (!viewer) {
+    return { errors: { form: tx(locale, "Sesi kamu telah berakhir. Masuk kembali, lalu simpan sekali lagi.", "You are no longer signed in. Sign in again, then save once more.") }, values };
+  }
+
+  const checked = validateGitHub(values.github, locale);
+  if ("error" in checked) return { errors: { github: checked.error }, values };
+
+  const shown = checked.url !== "" && values.shown;
+  const supabase = await requireSupabase();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ github: checked.url, github_activity_shown: shown })
+    .eq("id", viewer.id);
+  if (error) return { errors: { form: error.message }, values };
+
+  // The handle is the picture on directory badges and the person on /activity.
+  updateTag(tags.person(viewer.username));
+  updateTag(tags.people);
+  updateTag(tags.projects);
+  updateTag(tags.activity);
+  revalidatePath(`/u/${viewer.username}`);
+  return { errors: {}, values: { github: checked.url, shown }, saved: true };
 }
 
 /* ------------------------------------------------------------------ *
