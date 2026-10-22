@@ -20,7 +20,39 @@ export function isOssRelation(value: string): value is OssRelation {
 }
 
 /** One row of somebody's record. */
-export type OssContribution = { repo: string; relation: OssRelation };
+export type OssContribution = {
+  repo: string;
+  relation: OssRelation;
+  /** Typed in by the person, so theirs to remove. False for one GitHub alone vouches for. */
+  manual?: boolean;
+  /** A pull request of theirs was merged into it, as GitHub reports it. */
+  verified?: boolean;
+};
+
+export type OssRow = { userId: string; repo: string; relation: OssRelation; manual: boolean; verified: boolean };
+
+/**
+ * The record a member typed in, joined with what GitHub vouches for — see
+ * 20261027000100_github_contributions.sql. A repository in both is one row,
+ * keeping the relation they chose and marked verified; one only GitHub knows
+ * about comes after, as a contribution nobody typed and nobody can remove by
+ * hand. Each person's typed order is kept.
+ */
+export function mergeOssRows(
+  typed: { userId: string; repo: string; relation: OssRelation }[],
+  merged: { userId: string; repo: string }[],
+): OssRow[] {
+  const verified = new Set(merged.map((row) => `${row.userId} ${row.repo}`));
+  const rows: OssRow[] = typed.map((row) => ({ ...row, manual: true, verified: verified.has(`${row.userId} ${row.repo}`) }));
+  const known = new Set(rows.map((row) => `${row.userId} ${row.repo}`));
+  for (const row of merged) {
+    const key = `${row.userId} ${row.repo}`;
+    if (known.has(key)) continue;
+    known.add(key);
+    rows.push({ userId: row.userId, repo: row.repo, relation: "contributor", manual: false, verified: true });
+  }
+  return rows;
+}
 
 /** A member as the badges need them: who they are here, and on GitHub. */
 export type OssMember = {

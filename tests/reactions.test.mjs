@@ -41,3 +41,11 @@ test("the emoji set matches the database's CHECK", async () => {
   const allowed = migration.match(/emoji in \(([^)]+)\)/)[1].match(/'([a-z]+)'/g).map((value) => value.slice(1, -1));
   assert.deepEqual(allowed, REACTIONS.map((reaction) => reaction.key));
 });
+
+test("a reaction can be left on a pull request or a commit summary, and nothing else", async () => {
+  const { isReactionTarget } = await import("../app/lib/reactions.ts");
+  assert.ok(isReactionTarget("https://github.com/org/tool/pull/7"));
+  assert.ok(isReactionTarget("commits:00000000-0000-4000-8000-000000000001"));
+  assert.ok(!isReactionTarget("commits:not-a-uuid"));
+  assert.ok(!isReactionTarget("https://evil.example/pull/1"));
+});

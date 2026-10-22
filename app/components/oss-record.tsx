@@ -87,13 +87,20 @@ export function OssRecordList({
             <span className={`oss-record-relation oss-record-${record.relation}`}>
               {record.relation === "maintainer" ? "Maintainer" : tx(locale, "Kontributor", "Contributor")}
             </span>
+            {record.verified ? (
+              <span className="oss-record-verified" title={tx(locale, "Ada PR yang sudah di-merge, menurut GitHub", "A pull request was merged, as GitHub reports it")}>
+                {tx(locale, "✓ PR merged", "✓ PR merged")}
+              </span>
+            ) : null}
           </div>
           {handle ? (
             <a className="oss-record-evidence" href={contributionEvidenceUrl(record.repo, handle)} target="_blank" rel="noopener noreferrer">
               {tx(locale, "Lihat PR", "See PRs")} <span aria-hidden="true">↗</span>
             </a>
           ) : null}
-          {editable ? (
+          {/* Only what they typed is theirs to remove: a repository GitHub
+              vouches for stays while their Activity consent does. */}
+          {editable && record.manual !== false ? (
             <form action={removeOssContribution}>
               <input type="hidden" name="repo" value={record.repo} />
               <SubmitButton className="oss-record-remove" aria-label={tx(locale, `Hapus ${record.repo}`, `Remove ${record.repo}`)}>

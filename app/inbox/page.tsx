@@ -239,8 +239,16 @@ function NoticeLine({ notice, locale }: { notice: NoticeView; locale: Locale }) 
 
 /** Somebody reacted to one of the viewer's pull requests on /activity. */
 function ReactionNotice({ notice, locale }: { notice: NoticeView; locale: Locale }) {
-  const { url, repo, number, title, emoji, actor_name: name, actor_username: username } = notice.payload;
+  const { url, repo, number, title, emoji, target, actor_name: name, actor_username: username } = notice.payload;
   const who = username ? <Link href={`/u/${username}`}>{name || `@${username}`}</Link> : <strong>{name || tx(locale, "Seseorang", "Somebody")}</strong>;
+  if (target === "commits") {
+    return (
+      <p>
+        {who} {tx(locale, "memberi", "reacted")} {reactionEmoji(emoji ?? "")} {tx(locale, "untuk kesibukanmu di repo sendiri.", "to the work on your own repositories.")}{" "}
+        <Link href="/activity">{tx(locale, "Lihat di Aktivitas", "See it on Activity")}</Link>
+      </p>
+    );
+  }
   const pr = url?.startsWith("https://github.com/") ? (
     <a href={url} target="_blank" rel="noopener noreferrer">
       {title || `#${number}`}

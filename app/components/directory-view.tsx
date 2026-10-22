@@ -375,7 +375,7 @@ const LANGUAGE_COLOURS: Record<string, string> = {
 /** How many entries a long group shows before folding the rest away, as GitHub does with languages. */
 const FACETS_SHOWN = 6;
 
-function FacetGroup({
+export function FacetGroup({
   title,
   className = "",
   more,
@@ -414,7 +414,7 @@ function FacetGroup({
   );
 }
 
-function FacetLink({
+export function FacetLink({
   active,
   href,
   count,

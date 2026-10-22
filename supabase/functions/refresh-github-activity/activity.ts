@@ -246,3 +246,46 @@ export function chunk<T>(items: T[], size: number): T[][] {
   for (let start = 0; start < items.length; start += size) batches.push(items.slice(start, start + size));
   return batches;
 }
+
+/** One row of public.github_contributions. */
+export type ContributionRow = { user_id: string; repo: string; first_merged_at: string; last_merged_at: string };
+
+/**
+ * The member's merged pull requests folded into one row per repository, kept
+ * against what is already stored: the first merge stays the earliest ever
+ * seen even after it has left the 90-day window, the last moves forward.
+ */
+export function contributionsFrom(pullRequests: PullRequestRow[], stored: ContributionRow[]): ContributionRow[] {
+  const byRepo = new Map(stored.map((row) => [row.repo, { ...row }]));
+  for (const pr of pullRequests) {
+    if (pr.state !== "merged" || !pr.merged_at) continue;
+    const row = byRepo.get(pr.repo);
+    if (!row) {
+      byRepo.set(pr.repo, { user_id: pr.user_id, repo: pr.repo, first_merged_at: pr.merged_at, last_merged_at: pr.merged_at });
+      continue;
+    }
+    if (pr.merged_at < row.first_merged_at) row.first_merged_at = pr.merged_at;
+    if (pr.merged_at > row.last_merged_at) row.last_merged_at = pr.merged_at;
+  }
+  return [...byRepo.values()];
+}
+
+/**
+ * A repository put forward to the catalogue because a member's pull request
+ * was merged into it — pending, for an admin to approve, with the evidence
+ * as its reason. One per repository: the earliest merge stands for it.
+ */
+export function suggestionsFrom(pullRequests: PullRequestRow[], handle: string): { repo: string; why: string; submitted_by: string }[] {
+  const first = new Map<string, PullRequestRow>();
+  for (const pr of pullRequests) {
+    if (pr.state !== "merged" || !pr.merged_at) continue;
+    const seen = first.get(pr.repo);
+    if (!seen || pr.merged_at < (seen.merged_at ?? "")) first.set(pr.repo, pr);
+  }
+  return [...first.values()].map((pr) => ({
+    repo: pr.repo,
+    // oss_repos_why_length: 10 to 280 characters.
+    why: `PR dari @${handle} sudah di-merge: ${pr.url}`.slice(0, 280),
+    submitted_by: pr.user_id,
+  }));
+}

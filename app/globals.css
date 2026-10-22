@@ -2826,7 +2826,14 @@ form button[aria-busy="true"]::after,
 @media (max-width: 640px) {
   .dx-page { padding-top: 22px; }
   .dx-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-bottom: 16px; }
-  .dx-head-stats { display: none; }
+  /* One quiet line on a phone — "15 repos  14 products  144 registered" —
+     enough to show the place is alive without pushing the list down. */
+  /* Spaced rather than dotted, so a line that wraps does not start with a
+     stray separator. */
+  .dx-head-stats { flex-wrap: wrap; gap: 2px 16px; }
+  .dx-head-stats div { align-items: baseline; flex-direction: row-reverse; gap: 4px; }
+  .dx-head-stats dd { font-size: 14px; letter-spacing: 0; line-height: 1.4; }
+  .dx-head-stats dt { font-size: 13px; }
   .dx-head h1 { font-size: 22px; }
   .dx-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
   .dx-search { max-width: none; }
@@ -3052,39 +3059,62 @@ form button[aria-busy="true"]::after,
 .pf-note { color: var(--dx-faint); font-size: 12px; margin: -4px 0 12px; }
 .pf-trail { border: 1px solid var(--dx-line); border-radius: 12px; padding: 4px 16px; }
 
-/* /activity: members' open source work from GitHub. One card per entry, the
-   person's GitHub face first, like a notification in GitHub's own feed. */
-.gh-activity-head { align-items: center; display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; margin-bottom: 14px; }
-.gh-activity-stats { color: var(--dx-muted); font-size: 13px; margin: 0; }
-.gh-activity-list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
-.gh-activity-item {
-  align-items: flex-start; background: light-dark(#fff, #1f1f1f); border: 1px solid var(--dx-line); border-radius: 12px;
-  display: flex; gap: 12px; padding: 14px 16px;
+/* /activity: a timeline in the directory's frame — the same heading, the
+   same facets on the left, the same sheet on a phone — so somebody who
+   knows the directory already knows where everything is. */
+/* The directory's heading drops its numbers to a third row, beside its WA
+   button. Activity has no button, so the numbers sit beside the title and
+   sentence instead of on a row of their own. */
+@media (min-width: 901px) {
+  .dx-head.ax-head h1, .dx-head.ax-head p { grid-column: 1; }
+  .dx-head.ax-head .dx-head-stats { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
 }
-.gh-activity-item.is-summary { background: var(--dx-soft); }
-.gh-activity-avatar { border-radius: 50%; flex: none; height: 32px; width: 32px; }
-.gh-activity-body { min-width: 0; }
-.gh-activity-line { color: var(--dx-text); font-size: 14px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
-.gh-activity-who { color: var(--dx-ink); font-weight: 650; }
-.gh-activity-repo { color: light-dark(#0969da, #4493f8); font-weight: 600; }
-.gh-activity-who:hover, .gh-activity-repo:hover { text-decoration: underline; }
-.gh-activity-time { color: var(--dx-muted); font-size: 12.5px; }
-.gh-activity-sub { color: var(--dx-muted); font-size: 12.5px; margin: 2px 0 0; }
-.gh-activity-pr {
-  align-items: baseline; border: 1px solid var(--dx-line); border-radius: 8px; color: var(--dx-ink); display: flex; gap: 8px;
-  margin-top: 8px; padding: 8px 10px;
+.ax-head-link { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--dx-line); text-underline-offset: 3px; }
+.ax-head-link:hover { text-decoration-color: currentColor; }
+.ax-avatar { border-radius: 50%; flex: none; }
+.ax-facet-avatar { border-radius: 4px; flex: none; }
+.ax-pr-icon { fill: none; flex: none; height: 16px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; width: 16px; }
+.ax-pr-icon.is-merged { color: light-dark(#8250df, #b392f0); }
+.ax-pr-icon.is-open { color: light-dark(#1a7f37, #57ab5a); }
+
+/* One continuous column, days as quiet headings, a line threading each
+   day's people together — GitHub's dashboard, not a stack of cards. */
+.ax-timeline { display: grid; gap: 22px; }
+.ax-day-title {
+  color: var(--dx-muted); font-size: 12.5px; font-weight: 650; letter-spacing: .02em; margin: 0 0 4px;
 }
-.gh-activity-pr:hover { border-color: light-dark(#c3ccd5, #4e4e54); }
-.gh-activity-title { flex: 1; font-size: 13.5px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.gh-activity-number { color: var(--dx-muted); font-size: 12.5px; }
-.gh-activity-state { border-radius: 999px; flex: none; font-size: 11.5px; font-weight: 650; padding: 1px 8px; }
-.gh-activity-state.is-merged { background: light-dark(#f3eefe, #2c2340); color: light-dark(#8250df, #b392f0); }
-.gh-activity-state.is-open { background: light-dark(#e8f5ec, #1d2f23); color: light-dark(#1a7f37, #57ab5a); }
-.gh-activity-empty { border: 1px dashed var(--dx-line); border-radius: 12px; color: var(--dx-muted); font-size: 14px; padding: 20px; }
-.gh-activity-empty p { margin: 0; }
-.gh-activity-empty p + p { margin-top: 6px; }
-.gh-activity-empty a { border-bottom: 1px solid currentColor; color: var(--dx-ink); }
-.gh-activity-note { color: var(--dx-faint); font-size: 12px; margin-top: 20px; }
+.ax-events { list-style: none; margin: 0; padding: 0; position: relative; }
+.ax-events::before { background: var(--dx-line); bottom: 18px; content: ""; left: 15px; position: absolute; top: 18px; width: 1px; }
+.ax-event { display: flex; gap: 12px; padding: 10px 0; position: relative; }
+.ax-event + .ax-event { border-top: 1px solid light-dark(#f1f1f3, #29292c); }
+.ax-event > .ax-avatar { background: var(--paper); box-shadow: 0 0 0 3px var(--paper); height: 32px; position: relative; width: 32px; }
+.ax-event-body { flex: 1; min-width: 0; padding-top: 5px; }
+.ax-event-line { color: var(--dx-text); font-size: 14px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+.ax-who { color: var(--dx-ink); font-weight: 650; }
+.ax-who:hover { text-decoration: underline; }
+.ax-repo { align-items: baseline; color: var(--dx-ink); display: inline-flex; font-weight: 600; gap: 5px; }
+.ax-repo img { align-self: center; border-radius: 3px; height: 14px; width: 14px; }
+.ax-repo:hover { text-decoration: underline; }
+.ax-time { color: var(--dx-faint); font-size: 12.5px; margin-left: 8px; white-space: nowrap; }
+.ax-pr { align-items: flex-start; color: var(--dx-text); display: flex; font-size: 14px; gap: 8px; line-height: 1.45; margin-top: 6px; }
+.ax-pr .ax-pr-icon { margin-top: 2px; }
+.ax-pr-title { font-weight: 500; overflow-wrap: anywhere; }
+.ax-pr:hover .ax-pr-title { color: var(--dx-ink); text-decoration: underline; }
+.ax-number { color: var(--dx-faint); flex: none; font-variant-numeric: tabular-nums; }
+.ax-event-body .reaction-bar { margin-top: 6px; }
+.ax-repos { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 6px 0 0; padding: 0; }
+.ax-repos li { align-items: center; border: 1px solid var(--dx-line); border-radius: 999px; display: inline-flex; font-size: 12.5px; gap: 6px; padding: 1px 4px 1px 9px; }
+.ax-repos a { color: light-dark(#0969da, #4493f8); font-weight: 600; }
+.ax-repos a:hover { text-decoration: underline; }
+.ax-repos li span { background: var(--dx-soft); border-radius: 999px; color: var(--dx-muted); font-size: 11px; font-variant-numeric: tabular-nums; font-weight: 650; padding: 0 6px; }
+.ax-repos .ax-repos-more { color: var(--dx-muted); padding-right: 9px; }
+.ax-empty { display: grid; gap: 6px; }
+.ax-empty p { margin: 0; }
+.ax-note { color: var(--dx-faint); font-size: 12px; margin: 18px 0 0; }
+
+@media (max-width: 640px) {
+  .ax-time { display: block; margin-left: 0; }
+}
 
 /* Slack's reaction row under a pull request. */
 .reaction-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -3118,6 +3148,7 @@ form button[aria-busy="true"]::after,
 .text-button:hover { color: var(--ink); }
 .new-product-form .help-toggle + .help-toggle, .new-product-form .progressive-panel + .help-toggle { margin-top: 10px; }
 .new-product-form .help-error { margin-top: 12px; }
+.oss-record-verified { background: light-dark(#e8f5ec, #1d2f23); border-radius: 999px; color: light-dark(#1a7f37, #57ab5a); font-size: 11.5px; font-weight: 650; margin-left: 6px; padding: 1px 7px; }
 .gh-form-actions { align-items: center; display: flex; gap: 12px; margin-top: 14px; }
 .gh-form-saved { color: light-dark(#1a7f37, #57ab5a); font-size: 13.5px; font-weight: 600; }
 

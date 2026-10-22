@@ -19,6 +19,13 @@ export function isReactionKey(value: string): value is ReactionKey {
   return REACTIONS.some((reaction) => reaction.key === value);
 }
 
+/** What can be reacted to: a pull request's URL, or a member's commit summary. */
+const SUMMARY_KEY = /^commits:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+export function isReactionTarget(value: string): boolean {
+  return (value.startsWith("https://github.com/") && value.length <= 500) || SUMMARY_KEY.test(value);
+}
+
 export function reactionEmoji(key: string): string {
   return REACTIONS.find((reaction) => reaction.key === key)?.emoji ?? "";
 }
