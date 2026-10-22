@@ -2734,18 +2734,15 @@ form button[aria-busy="true"]::after,
 }
 .dx-action:hover { background: light-dark(#27272a, #dfdfe3); }
 
-/* GitHub's own Star button: a soft grey fill a step off the card, a firm
-   border, the count in a pill inside. Starred, the star fills in. */
+/* Styled like GitHub's own Star button — a soft grey fill a step off the
+   card, a firm border — but a link: it opens the repo on GitHub. */
 .dx-star {
   align-items: center; background: light-dark(#f6f8fa, #2c2c30); border: 1px solid light-dark(#d1d9e0, #414146); border-radius: 8px;
-  color: var(--dx-ink); cursor: pointer; display: inline-flex; font: inherit; font-size: 13.5px; font-weight: 600;
+  color: var(--dx-ink); cursor: pointer; display: inline-flex; font: inherit; font-size: 13.5px; font-weight: 600; text-decoration: none;
   gap: 6px; height: 32px; padding: 0 12px 0 10px; transition: background .15s ease, border-color .15s ease; white-space: nowrap;
 }
 .dx-star:hover { background: light-dark(#eff2f5, #333338); border-color: light-dark(#c3ccd5, #4e4e54); }
 .dx-star svg { fill: none; flex: none; height: 16px; stroke: var(--dx-muted); stroke-linejoin: round; stroke-width: 1.8; width: 16px; }
-.dx-star.is-starred svg { fill: var(--dx-ink); stroke: var(--dx-ink); }
-.dx-star[aria-busy] { opacity: .7; }
-.dx-star.is-failed { border-color: light-dark(#f87171, #b14747); }
 .dx-meta { align-items: center; color: var(--dx-muted); display: flex; flex-wrap: wrap; font-size: 12.5px; gap: 4px 16px; margin: 8px 0 0; }
 .dx-meta .dx-lang { color: var(--dx-text); }
 .dx-meta-stars { align-items: center; display: inline-flex; font-variant-numeric: tabular-nums; gap: 4px; }
@@ -2853,16 +2850,9 @@ form button[aria-busy="true"]::after,
   .dx-cell-action { grid-column: 2 / -1; }
   .dx-row:not(.dx-row-head) .dx-cell-meta,
   .dx-row:not(.dx-row-head) .dx-cell-action { align-self: center; }
-  /* On the code path the Star goes where GitHub puts it on a phone: top
-     right, beside the name, with the language as the card's footer. */
-  /* Pinned to the corner rather than given a column, so only the name line
-     makes room for it and everything below keeps the card's full width. */
-  .dx-table-github .dx-row:not(.dx-row-head) { position: relative; }
-  /* Its column is the grid's last, so `right: 0` already sits on the card's
-     padding — the same inset as the avatar on the left — and `top` centres it
-     on the avatar's row. */
-  .dx-table-github .dx-row:not(.dx-row-head) .dx-cell-action { position: absolute; right: 0; top: 15px; }
-  .dx-table-github .dx-name > a { flex: 1 0 100%; padding-right: 84px; }
+  /* On the code path "Star on GitHub" is too wide to share the name's line
+     on a phone, so it closes the card instead, under the text it belongs to. */
+  .dx-table-github .dx-row:not(.dx-row-head) .dx-cell-action { grid-column: 1 / -1; justify-self: start; padding-left: 48px; }
   .dx-table-github .dx-star { height: 30px; }
 }
 @container (max-width: 420px) {

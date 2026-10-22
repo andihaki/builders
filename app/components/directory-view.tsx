@@ -7,7 +7,7 @@ import { InstantLink, InstantNav } from "./instant-link";
 import { FilterPanel, type ActiveFilter } from "./filter-panel";
 import { ProjectLogo } from "./project-logo";
 import { LinkIcon } from "./link-icons";
-import { StarButton, StarCount, StarsProvider } from "./star-button";
+import { StarCount, StarLink } from "./star-button";
 import { RelativeTime } from "./relative-time";
 import {
   DIRECTORY_SOURCES,
@@ -271,7 +271,6 @@ export function DirectoryView({
           </p>
         ) : null}
 
-        <StarsProvider repos={code ? shown.items.flatMap((entry) => (entry.repo ? [entry.repo] : [])) : []}>
         <div className={`dx-table dx-table-${filters.track}`} role="table" aria-label={tx(locale, "Daftar project", "Project list")}>
           <div className="dx-row dx-row-head" role="row">
             <span role="columnheader">Project</span>
@@ -290,7 +289,6 @@ export function DirectoryView({
             </div>
           )}
         </div>
-        </StarsProvider>
 
         {shown.pages > 1 ? (
           <nav className="dx-pager" aria-label={tx(locale, "Halaman", "Pages")}>
@@ -600,12 +598,11 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
               {entry.labels.map((label) => <span key={label} className="dx-tag">{label}</span>)}
             </p>
           ) : null}
-          {/* GitHub's own footer line: language · stars · last push. The
-              count lives here, apart from the Star button that changes it. */}
+          {/* GitHub's own footer line: language · stars · last push. */}
           {code && (entry.language || entry.stars !== null || entry.updatedAt || issues) ? (
             <p className="dx-meta">
               {entry.language ? <span className="dx-lang"><LanguageDot language={entry.language} />{entry.language}</span> : null}
-              {entry.stars !== null && entry.repo ? <StarCount repo={entry.repo} stars={entry.stars} /> : null}
+              {entry.stars !== null && entry.repo ? <StarCount stars={entry.stars} /> : null}
               {entry.updatedAt ? (
                 <span>
                   {tx(locale, "Diperbarui ", "Updated ")}
@@ -641,10 +638,10 @@ function DirectoryRow({ entry, locale }: { entry: DirectoryEntry; locale: Locale
       )}
 
       <div className="dx-cell-action" role="cell">
-        {/* On the code path the row ends like a GitHub search result: the Star
-            button. Elsewhere, the way in. */}
+        {/* On the code path the row ends like a GitHub search result: a Star,
+            which opens the repo on GitHub. Elsewhere, the way in. */}
         {code && entry.repo ? (
-          <StarButton repo={entry.repo} />
+          <StarLink repo={entry.repo} />
         ) : entry.external ? (
           <a className="dx-action" href={entry.actionHref} {...external}>
             {tx(locale, "Repo", "Repo")} <span aria-hidden="true">↗</span>

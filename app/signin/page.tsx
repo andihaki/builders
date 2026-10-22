@@ -55,8 +55,7 @@ export default async function SignInPage({ searchParams }: { searchParams?: Sear
   const problem = typeof params.error === "string" ? LINK_PROBLEMS[params.error] : undefined;
   const linkProblem = problem ? tx(locale, problem.id, problem.en) : undefined;
 
-  // GitHub first: the site is for people who write code, and the same
-  // sign-in is what lets the directory's Star button work. Google, and email
+  // GitHub first: the site is for people who write code. Google, and email
   // for accounts made before, stay one small link away. A GitHub or Google
   // sign-in makes the account on first use, so there is no separate sign-up.
   const way = params.with === "google" || params.with === "email" ? params.with : "github";

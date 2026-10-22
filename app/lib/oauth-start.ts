@@ -33,8 +33,8 @@ const PINNED = "origin";
  *
  * Somebody already signed in who asks for GitHub is linking it to the account
  * they have, not signing in as somebody else: their Google or email account
- * gains a GitHub identity, and the callback keeps the token that lets them
- * star repositories from here. Linking needs "Manual linking" switched on in
+ * gains a GitHub identity, and the callback records their GitHub handle.
+ * Linking needs "Manual linking" switched on in
  * Supabase → Authentication → Sign In / Providers.
  */
 export async function startOAuth(request: NextRequest, provider: OAuthProvider): Promise<NextResponse> {
@@ -93,7 +93,7 @@ export async function startOAuth(request: NextRequest, provider: OAuthProvider):
       started = { url: data.url, error };
     } else {
       // Signed out, or GitHub already linked: signing in with it lands on the
-      // same account and hands back a fresh token.
+      // same account.
       const { data, error } = await supabase.auth.signInWithOAuth({ provider, options });
       started = { url: data.url, error };
     }

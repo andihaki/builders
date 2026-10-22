@@ -179,8 +179,8 @@ const FAQ: readonly (readonly [string, string, string, string])[] = [
   [
     "Kenapa masuknya pakai GitHub?",
     "Why sign in with GitHub?",
-    "Karena kebanyakan yang datang ke sini mau kontribusi kode, dan dengan GitHub kamu bisa kasih bintang ke repo langsung dari direktori. Izin yang diminta cuma email dan memberi bintang—nggak bisa nyentuh kode atau repo-mu. Lebih suka Google? Tautannya ada di bawah tombol GitHub.",
-    "Because most people here come to contribute code, and with GitHub you can star repos straight from the directory. It asks only for your email and permission to star—nothing that can touch your code or repositories. Prefer Google? The link is just below the GitHub button.",
+    "Karena kebanyakan yang datang ke sini mau kontribusi kode, dan username GitHub-mu langsung terisi di profil. Izin yang diminta cuma email—nggak bisa nyentuh kode atau repo-mu. Lebih suka Google? Tautannya ada di bawah tombol GitHub.",
+    "Because most people here come to contribute code, and your GitHub username fills in on your profile. It asks only for your email—nothing that can touch your code or repositories. Prefer Google? The link is just below the GitHub button.",
   ],
   [
     "Berbayar?",
@@ -312,7 +312,7 @@ export default async function AboutPage() {
               <span className="ab-sign" aria-hidden="true">☆</span>
               <div>
                 <strong>Star</strong>
-                <p>{tx(locale, "Kasih bintang langsung dari direktori, persis seperti di GitHub. Cukup masuk dengan GitHub sekali.", "Star a repo straight from the directory, just like on GitHub. Sign in with GitHub once.")}</p>
+                <p>{tx(locale, "Suka sama repo-nya? Tombol Star membuka repo itu di GitHub, tempat kamu bisa kasih bintang.", "Like a repo? The Star button opens it on GitHub, where you can star it.")}</p>
               </div>
             </li>
           </ul>

@@ -3,7 +3,6 @@ import { getSupabase } from "../../lib/supabase";
 import { siteOrigin } from "../../lib/origin";
 import { sameOriginRedirect } from "../../lib/redirect";
 import { pinnedOrigin, safeNextPath, startPath } from "../../lib/urls";
-import { rememberGitHubToken } from "../../lib/github-token";
 import type { Supabase } from "../../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 
@@ -11,7 +10,7 @@ import type { Session } from "@supabase/supabase-js";
  * Exchanges a provider's short-lived OAuth code — Google's or GitHub's — for
  * the session cookies used by the app. `via` names the provider; it is set by
  * `startOAuth` and only decides which failure to report and whether there is a
- * GitHub token to keep.
+ * GitHub handle to record.
  */
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -75,18 +74,10 @@ function retry(path: string, wrongHost: boolean): NextResponse | Response {
   return pinned ? Response.redirect(new URL(path, pinned), 307) : sameOriginRedirect(path);
 }
 
-/**
- * What a GitHub sign-in leaves behind besides the session: the token the Star
- * button uses — Supabase hands it over here, once, and never again — and the
- * person's GitHub handle on a profile that has none yet.
- */
+/** What a GitHub sign-in leaves behind besides the session: the person's
+ * GitHub handle, on a profile that has none yet. */
 async function keepGitHub(supabase: Supabase, session: Session | null): Promise<void> {
   if (!session) return;
-  if (session.provider_token) await rememberGitHubToken(session.provider_token);
-  // Without it every Star press sends them back through GitHub again, and
-  // nothing on the page can say why.
-  else console.warn("[ahsan] GitHub sign-in finished without a provider token; the Star button cannot work for this visitor.");
-
   const identity = session.user.identities?.find((item) => item.provider === "github");
   const handle = identity?.identity_data?.user_name;
   if (typeof handle !== "string" || !/^[a-z\d](?:[a-z\d-]{0,38})$/i.test(handle)) return;

@@ -7,7 +7,6 @@ import { safeNextPath, startPath } from "./lib/urls";
 import { siteOrigin } from "./lib/origin";
 import { currentLocale } from "./lib/locale-server";
 import { tx, type Locale } from "./lib/locale";
-import { forgetGitHubToken } from "./lib/github-token";
 
 export type AuthState = {
   error?: string;
@@ -105,8 +104,6 @@ export async function updatePassword(_state: AuthState, formData: FormData): Pro
 export async function signOut(): Promise<void> {
   const supabase = await requireSupabase();
   await supabase.auth.signOut();
-  // The GitHub token is theirs, not the browser's: it leaves with them.
-  await forgetGitHubToken();
 
   revalidatePath("/", "layout");
   redirect("/");
