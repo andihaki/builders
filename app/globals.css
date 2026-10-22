@@ -3083,6 +3083,10 @@ form button[aria-busy="true"]::after,
 .gh-activity-empty p + p { margin-top: 6px; }
 .gh-activity-empty a { border-bottom: 1px solid currentColor; color: var(--dx-ink); }
 .gh-activity-note { color: var(--dx-faint); font-size: 12px; margin-top: 20px; }
+.gh-consent { border: 1px solid var(--dx-line); border-radius: 10px; margin: 14px 0; padding: 10px 14px; }
+.gh-consent legend { font-size: 12.5px; font-weight: 650; padding: 0 4px; }
+.gh-consent label { align-items: center; display: flex; gap: 8px; font-size: 14px; }
+.gh-consent .hint { margin: 6px 0 0; }
 
 .pf-products { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .pf-products li {

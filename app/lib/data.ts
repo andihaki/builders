@@ -52,6 +52,8 @@ export type Person = {
   resume: string;
   /** Trail kinds kept off this person's public profile. */
   activityHidden: string[];
+  /** Agreed to their GitHub activity being shown on /activity. */
+  githubActivityShown: boolean;
 };
 
 export type ActivityEvent = {
@@ -1559,6 +1561,7 @@ function toPerson(row: ProfileRow): Person {
     x: row.x_url ?? "",
     resume: row.resume_url ?? "",
     activityHidden: row.activity_hidden ?? [],
+    githubActivityShown: row.github_activity_shown === true,
   };
 }
 
@@ -2008,11 +2011,11 @@ function activityPerson(person: PersonColumns): ActivityPerson | null {
 
 /**
  * Members' open source work from GitHub, newest first — see
- * supabase/functions/refresh-github-activity. Rows of anybody who hid it are
- * already gone: the tables' read policies check profiles.activity_hidden.
+ * supabase/functions/refresh-github-activity. Only people who agreed to be
+ * shown: the tables' read policies check profiles.github_activity_shown.
  *
- * Tagged with the site-wide trail, which is what changing one's visibility
- * invalidates; the rows themselves change only in the Edge Function, and the
+ * Tagged with the site-wide trail, which is what saving one's visibility
+ * settings invalidates; the rows themselves change only in the Edge Function, and the
  * board's cache life is the backstop for that.
  */
 export async function listGitHubActivity(): Promise<GitHubActivityEntry[]> {

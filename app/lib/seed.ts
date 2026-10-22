@@ -24,6 +24,7 @@ export type SeedUser = {
   resume: string;
   /** Trail kinds kept off the public profile. Empty means everything shows. */
   activityHidden: string[];
+  githubActivityShown: boolean;
 };
 
 export type SeedEvent = {
@@ -111,6 +112,7 @@ export const seedUsers: SeedUser[] = [
     x: "",
     resume: "",
     activityHidden: [],
+    githubActivityShown: false,
   },
 ];
 

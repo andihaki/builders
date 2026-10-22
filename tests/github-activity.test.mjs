@@ -9,7 +9,6 @@ import {
 } from "../supabase/functions/refresh-github-activity/activity.ts";
 import { buildGitHubActivity, filterGitHubActivity } from "../app/lib/github-activity.ts";
 import { githubHandle as appGithubHandle } from "../app/lib/oss.ts";
-import { GITHUB_ACTIVITY, hiddenFrom } from "../app/lib/activity.ts";
 
 const now = new Date("2026-10-22T00:00:00.000Z");
 const ana = { id: "00000000-0000-4000-8000-000000000001", handle: "ana" };
@@ -125,11 +124,4 @@ test("the feed puts newest first and filters keep summaries out of merged and op
   ]);
   assert.deepEqual(filterGitHubActivity(entries, "merged").map((entry) => entry.key), ["https://github.com/org/tool/pull/7"]);
   assert.deepEqual(filterGitHubActivity(entries, "open").map((entry) => entry.key), ["https://github.com/org/tool/pull/8"]);
-});
-
-test("the visibility form can hide GitHub activity alongside the trail kinds", () => {
-  assert.ok(hiddenFrom(["project_created"]).includes(GITHUB_ACTIVITY));
-  assert.ok(!hiddenFrom(["project_created", GITHUB_ACTIVITY]).includes(GITHUB_ACTIVITY));
-  // A kind this build does not know about is still left alone.
-  assert.ok(hiddenFrom([GITHUB_ACTIVITY], ["from_the_future"]).includes("from_the_future"));
 });

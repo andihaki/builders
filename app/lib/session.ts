@@ -139,6 +139,7 @@ function toViewer(profile: ProfileRow, email: string): Viewer {
     x: profile.x_url ?? "",
     resume: profile.resume_url ?? "",
     activityHidden: profile.activity_hidden ?? [],
+    githubActivityShown: profile.github_activity_shown === true,
     email,
   };
 }
