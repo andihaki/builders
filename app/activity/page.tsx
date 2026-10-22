@@ -117,7 +117,7 @@ export default async function ActivityPage({ searchParams }: { searchParams?: Se
 
 function Heading({ locale, children }: { locale: Locale; children?: React.ReactNode }) {
   return (
-    <header className="dx-head">
+    <header className="dx-head ax-head">
       <div>
         <h1>{tx(locale, "Aktivitas open source", "Open source activity")}</h1>
         <p>

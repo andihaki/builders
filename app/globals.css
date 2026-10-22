@@ -3055,6 +3055,13 @@ form button[aria-busy="true"]::after,
 /* /activity: a timeline in the directory's frame — the same heading, the
    same facets on the left, the same sheet on a phone — so somebody who
    knows the directory already knows where everything is. */
+/* The directory's heading drops its numbers to a third row, beside its WA
+   button. Activity has no button, so the numbers sit beside the title and
+   sentence instead of on a row of their own. */
+@media (min-width: 901px) {
+  .dx-head.ax-head h1, .dx-head.ax-head p { grid-column: 1; }
+  .dx-head.ax-head .dx-head-stats { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+}
 .ax-head-link { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--dx-line); text-underline-offset: 3px; }
 .ax-head-link:hover { text-decoration-color: currentColor; }
 .ax-avatar { border-radius: 50%; flex: none; }
