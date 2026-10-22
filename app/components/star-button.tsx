@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
-import { setStar, starredAmong } from "../star-actions";
+import { setStar, starredAmong, type StarResult } from "../star-actions";
 import { useLanguage } from "./language-provider";
 
 /**
@@ -37,11 +37,14 @@ export function StarsProvider({ repos, children }: { repos: string[]; children: 
   useEffect(() => {
     if (!connected || !key) return;
     let live = true;
-    starredAmong(key.split(",")).then((found) => {
-      if (!live) return;
-      setInitial(new Set(found));
-      setCurrent(new Set(found));
-    });
+    starredAmong(key.split(","))
+      .then((found) => {
+        if (!live) return;
+        setInitial(new Set(found));
+        setCurrent(new Set(found));
+      })
+      // Not knowing what is starred only leaves every button reading "Star".
+      .catch(() => {});
     return () => {
       live = false;
     };
@@ -98,7 +101,11 @@ export function StarButton({ repo }: { repo: string }) {
     setFailed(false);
     context.set(repo, want);
     startTransition(async () => {
-      const result = await setStar(repo, want);
+      // The call itself can fail — a 500, a dropped connection, a tab left
+      // open across a deploy whose action no longer exists. Thrown inside a
+      // transition, that reaches the error boundary and takes the whole
+      // directory down with it; here it is one button saying "Failed".
+      const result = await setStar(repo, want).catch((): StarResult => ({ ok: false, reason: "failed" }));
       if (result.ok) return;
       context.set(repo, !want);
       if (result.reason === "connect") connect();
