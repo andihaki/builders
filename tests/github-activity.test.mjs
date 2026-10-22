@@ -169,3 +169,13 @@ test("merged pull requests become lasting contributions and pending suggestions"
     { repo: "org/c", why: "PR dari @ana sudah di-merge: https://github.com/org/c/pull/4", submitted_by: "u" },
   ]);
 });
+
+test("the timeline groups by day in WIB, not in the server's UTC", async () => {
+  const { dayKey, groupByDay } = await import("../app/lib/github-activity.ts");
+  // 18:00 UTC is already the next day in Jakarta.
+  assert.equal(dayKey("2026-10-21T18:00:00Z", "Asia/Jakarta"), "2026-10-22");
+  assert.equal(dayKey("2026-10-21T16:00:00Z", "Asia/Jakarta"), "2026-10-21");
+  const at = (key, when) => ({ kind: "pull_request", key, at: when });
+  const days = groupByDay([at("a", "2026-10-22T03:00:00Z"), at("b", "2026-10-21T18:00:00Z"), at("c", "2026-10-21T10:00:00Z")]);
+  assert.deepEqual(days.map(({ day, entries }) => [day, entries.map((entry) => entry.key)]), [["2026-10-22", ["a", "b"]], ["2026-10-21", ["c"]]]);
+});

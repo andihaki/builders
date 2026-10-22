@@ -163,3 +163,27 @@ export function activityStats(entries: GitHubActivityEntry[]): ActivityStats {
 export function ownerAvatar(repo: string, size = 40): string {
   return `https://github.com/${encodeURIComponent(repo.slice(0, repo.indexOf("/")))}.png?size=${size}`;
 }
+
+/** A calendar day as `YYYY-MM-DD` in the given time zone. */
+export function dayKey(at: string | Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(at));
+}
+
+/**
+ * The timeline's days, newest first, keeping the order within each. Days are
+ * counted where the members live — WIB by default — not in the server's UTC,
+ * so an evening merge in Jakarta lands on that evening's day.
+ */
+export function groupByDay(
+  entries: GitHubActivityEntry[],
+  timeZone = "Asia/Jakarta",
+): { day: string; entries: GitHubActivityEntry[] }[] {
+  const days: { day: string; entries: GitHubActivityEntry[] }[] = [];
+  for (const entry of entries) {
+    const day = dayKey(entry.at, timeZone);
+    const last = days[days.length - 1];
+    if (last?.day === day) last.entries.push(entry);
+    else days.push({ day, entries: [entry] });
+  }
+  return days;
+}

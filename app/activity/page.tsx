@@ -15,6 +15,8 @@ import {
   activityPeople,
   activityRepos,
   activityStats,
+  dayKey,
+  groupByDay,
   isGitHubActivityFilter,
   kindCounts,
   ownerAvatar,
@@ -85,9 +87,11 @@ function pathFor(query: Partial<Query>, page = 1): string {
 }
 
 /**
- * What members have been doing in open source, read from GitHub — laid out
- * like the directory: a short heading with its numbers, filters down the
- * side, and the list doing the talking.
+ * What members have been doing in open source, read from GitHub, as a
+ * timeline: people doing things, day by day, the way GitHub's own feed reads.
+ * It borrows the directory's frame — the short heading with its numbers, the
+ * filters folded into a sheet on phones — but the filters sit to the right,
+ * supporting the timeline rather than leading it.
  *
  * Nobody writes these entries: the refresh-github-activity Edge Function asks
  * GitHub every few hours, for members who chose to be shown.
@@ -185,7 +189,7 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
         </dl>
       </Heading>
 
-      <div className="dx-layout">
+      <div className="dx-layout ax-layout">
         <FilterPanel active={active}>
           <FacetGroup title={tx(locale, "Jenis", "Kind")}>
             {(["all", "merged", "open", "commits"] as const).map((kind) => (
@@ -202,7 +206,7 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
           </FacetGroup>
 
           {people.length > 0 ? (
-            <FacetGroup title={tx(locale, "Member", "Members")} more={tx(locale, "Member lainnya…", "More members…")}>
+            <FacetGroup title={tx(locale, "Paling aktif", "Most active")} more={tx(locale, "Member lainnya…", "More members…")}>
               {people.map(({ person, count }) => {
                 const on = person.handle.toLowerCase() === current.member.toLowerCase();
                 return (
@@ -280,17 +284,27 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
               </p>
             </div>
           ) : (
-            <ol className="ax-list">
-              {shown.map((entry) => (
-                <li key={entry.key}>
-                  {entry.kind === "pull_request" ? (
-                    <PullRequestRow entry={entry} locale={locale} reactions={reactions[entry.url] ?? []} viewerName={viewerName} />
-                  ) : (
-                    <CommitSummaryRow entry={entry} locale={locale} reactions={reactions[entry.key] ?? []} viewerName={viewerName} />
-                  )}
-                </li>
+            <div className="ax-timeline">
+              {groupByDay(shown).map(({ day, entries }) => (
+                <section key={day} className="ax-day" aria-labelledby={`day-${day}`}>
+                  <h2 id={`day-${day}`} className="ax-day-title">
+                    {dayLabel(day, locale)}
+                  </h2>
+                  <ol className="ax-events">
+                    {entries.map((entry) => (
+                      <li key={entry.key} className="ax-event">
+                        <Avatar handle={entry.person.handle} size={32} />
+                        {entry.kind === "pull_request" ? (
+                          <PullRequestEvent entry={entry} locale={locale} reactions={reactions[entry.url] ?? []} viewerName={viewerName} />
+                        ) : (
+                          <CommitSummaryEvent entry={entry} locale={locale} reactions={reactions[entry.key] ?? []} viewerName={viewerName} />
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               ))}
-            </ol>
+            </div>
           )}
 
           {pages > 1 ? (
@@ -353,21 +367,36 @@ function Avatar({ handle, size }: { handle: string; size: number }) {
   return <img className="ax-avatar" src={`https://github.com/${encodeURIComponent(handle)}.png?size=${size * 2}`} alt="" width={size} height={size} loading="lazy" />;
 }
 
+/** "Hari ini", "Kemarin", or the date, for a day key from groupByDay. */
+function dayLabel(day: string, locale: Locale): string {
+  const now = new Date();
+  if (day === dayKey(now, "Asia/Jakarta")) return tx(locale, "Hari ini", "Today");
+  if (day === dayKey(new Date(now.getTime() - 86_400_000), "Asia/Jakarta")) return tx(locale, "Kemarin", "Yesterday");
+  return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", { day: "numeric", month: "long", timeZone: "Asia/Jakarta" }).format(
+    new Date(`${day}T12:00:00+07:00`),
+  );
+}
+
 function Who({ entry }: { entry: GitHubActivityEntry }) {
   return (
     <Link className="ax-who" href={`/u/${entry.person.username}`}>
-      <Avatar handle={entry.person.handle} size={16} />
       {entry.person.name || `@${entry.person.handle}`}
     </Link>
   );
 }
 
-/**
- * A pull request as a directory row: the repository is the subject, as on the
- * directory — its owner's picture and name — then the PR's title, then who
- * and when, and the reactions.
- */
-function PullRequestRow({
+function RepoLink({ repo }: { repo: string }) {
+  return (
+    <a className="ax-repo" href={`https://github.com/${repo}`} target="_blank" rel="noopener noreferrer">
+      {/* eslint-disable-next-line @next/next/no-img-element -- the repository owner's GitHub picture */}
+      <img src={ownerAvatar(repo, 32)} alt="" width={14} height={14} loading="lazy" />
+      {repo}
+    </a>
+  );
+}
+
+/** "Zikrul got a pull request merged in owner/repo", then the PR itself. */
+function PullRequestEvent({
   entry,
   locale,
   reactions,
@@ -380,37 +409,26 @@ function PullRequestRow({
 }) {
   const merged = entry.state === "merged";
   return (
-    <article className="ax-row">
-      {/* eslint-disable-next-line @next/next/no-img-element -- the repository owner's GitHub picture */}
-      <img className="ax-logo" src={ownerAvatar(entry.repo, 80)} alt="" width={36} height={36} loading="lazy" />
-      <div className="ax-main">
-        <p className="ax-name">
-          <a href={`https://github.com/${entry.repo}`} target="_blank" rel="noopener noreferrer">
-            {entry.repo}
-          </a>
-          <span className={`ax-state ${merged ? "is-merged" : "is-open"}`}>
-            <PullRequestIcon merged={merged} />
-            {merged ? "Merged" : tx(locale, "Direview", "In review")}
-          </span>
-        </p>
-        <a className="ax-title" href={entry.url} target="_blank" rel="noopener noreferrer">
-          {entry.title || `#${entry.number}`} <span className="ax-number">#{entry.number}</span>
-        </a>
-        <div className="ax-meta">
-          <Who entry={entry} />
-          <span>
-            {merged ? tx(locale, "di-merge ", "merged ") : tx(locale, "dibuka ", "opened ")}
-            <RelativeTime value={entry.at} locale={locale} />
-          </span>
-          <ReactionBar url={entry.url} initial={reactions} viewerName={viewerName} />
-        </div>
-      </div>
-    </article>
+    <div className="ax-event-body">
+      <p className="ax-event-line">
+        <Who entry={entry} /> {merged ? tx(locale, "PR-nya di-merge di", "got a pull request merged in") : tx(locale, "membuka pull request di", "opened a pull request in")}{" "}
+        <RepoLink repo={entry.repo} />
+        <span className="ax-time">
+          <RelativeTime value={entry.at} locale={locale} />
+        </span>
+      </p>
+      <a className="ax-pr" href={entry.url} target="_blank" rel="noopener noreferrer">
+        <PullRequestIcon merged={merged} />
+        <span className="ax-pr-title">{entry.title || `#${entry.number}`}</span>
+        <span className="ax-number">#{entry.number}</span>
+      </a>
+      <ReactionBar url={entry.url} initial={reactions} viewerName={viewerName} />
+    </div>
   );
 }
 
-/** Work on one's own repositories, one row per person. */
-function CommitSummaryRow({
+/** Work on one's own repositories, one event per person. */
+function CommitSummaryEvent({
   entry,
   locale,
   reactions,
@@ -424,36 +442,29 @@ function CommitSummaryRow({
   const named = entry.repos.slice(0, SUMMARY_REPOS);
   const more = entry.repos.length - named.length;
   return (
-    <article className="ax-row is-summary">
-      <Avatar handle={entry.person.handle} size={36} />
-      <div className="ax-main">
-        <p className="ax-name">
-          <Link href={`/u/${entry.person.username}`}>{entry.person.name || `@${entry.person.handle}`}</Link>
-          <span className="ax-state is-commits">{tx(locale, "Repo sendiri", "Own repos")}</span>
-        </p>
-        <p className="ax-title is-plain">
-          {tx(
-            locale,
-            `${entry.commits} commit di ${entry.repos.length} repo dalam 30 hari terakhir`,
-            `${entry.commits} ${entry.commits === 1 ? "commit" : "commits"} across ${entry.repos.length} ${entry.repos.length === 1 ? "repo" : "repos"} in the last 30 days`,
-          )}
-        </p>
-        <div className="ax-meta">
-          <ul className="ax-repos">
-            {named.map((repo) => (
-              <li key={repo.repo}>
-                <a href={`https://github.com/${repo.repo}`} target="_blank" rel="noopener noreferrer">
-                  {repoName(repo.repo)}
-                </a>
-                <span>{repo.commits}</span>
-              </li>
-            ))}
-            {more > 0 ? <li className="ax-repos-more">+{more}</li> : null}
-          </ul>
-          <ReactionBar url={entry.key} initial={reactions} viewerName={viewerName} />
-        </div>
-      </div>
-    </article>
+    <div className="ax-event-body">
+      <p className="ax-event-line">
+        <Who entry={entry} />{" "}
+        {tx(
+          locale,
+          `membuat ${entry.commits} commit di ${entry.repos.length} repo miliknya`,
+          `made ${entry.commits} ${entry.commits === 1 ? "commit" : "commits"} in ${entry.repos.length} of their own ${entry.repos.length === 1 ? "repo" : "repos"}`,
+        )}
+        <span className="ax-time">{tx(locale, "30 hari terakhir", "last 30 days")}</span>
+      </p>
+      <ul className="ax-repos">
+        {named.map((repo) => (
+          <li key={repo.repo}>
+            <a href={`https://github.com/${repo.repo}`} target="_blank" rel="noopener noreferrer">
+              {repoName(repo.repo)}
+            </a>
+            <span>{repo.commits}</span>
+          </li>
+        ))}
+        {more > 0 ? <li className="ax-repos-more">+{more}</li> : null}
+      </ul>
+      <ReactionBar url={entry.key} initial={reactions} viewerName={viewerName} />
+    </div>
   );
 }
 
