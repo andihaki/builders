@@ -89,9 +89,9 @@ function pathFor(query: Partial<Query>, page = 1): string {
 /**
  * What members have been doing in open source, read from GitHub, as a
  * timeline: people doing things, day by day, the way GitHub's own feed reads.
- * It borrows the directory's frame — the short heading with its numbers, the
- * filters folded into a sheet on phones — but the filters sit to the right,
- * supporting the timeline rather than leading it.
+ * It sits in the directory's frame — the short heading with its numbers, the
+ * filters down the left, folded into a sheet on phones — so the page is
+ * familiar, while the list itself reads as a feed rather than a catalogue.
  *
  * Nobody writes these entries: the refresh-github-activity Edge Function asks
  * GitHub every few hours, for members who chose to be shown.
@@ -189,7 +189,7 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
         </dl>
       </Heading>
 
-      <div className="dx-layout ax-layout">
+      <div className="dx-layout">
         <FilterPanel active={active}>
           <FacetGroup title={tx(locale, "Jenis", "Kind")}>
             {(["all", "merged", "open", "commits"] as const).map((kind) => (

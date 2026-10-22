@@ -3052,13 +3052,9 @@ form button[aria-busy="true"]::after,
 .pf-note { color: var(--dx-faint); font-size: 12px; margin: -4px 0 12px; }
 .pf-trail { border: 1px solid var(--dx-line); border-radius: 12px; padding: 4px 16px; }
 
-/* /activity: a timeline in the directory's frame. The dx-page heading and
-   the facets are borrowed, but the facets sit on the right, supporting the
-   timeline rather than leading it; on a phone they fold into the same sheet
-   as the directory's. */
-.dx-layout.ax-layout { grid-template-columns: minmax(0, 1fr) 248px; }
-.ax-layout > .dx-results { grid-column: 1; grid-row: 1; }
-.ax-layout > .dx-side { grid-column: 2; grid-row: 1; }
+/* /activity: a timeline in the directory's frame — the same heading, the
+   same facets on the left, the same sheet on a phone — so somebody who
+   knows the directory already knows where everything is. */
 .ax-head-link { color: var(--dx-ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--dx-line); text-underline-offset: 3px; }
 .ax-head-link:hover { text-decoration-color: currentColor; }
 .ax-avatar { border-radius: 50%; flex: none; }
@@ -3102,10 +3098,6 @@ form button[aria-busy="true"]::after,
 .ax-empty p { margin: 0; }
 .ax-note { color: var(--dx-faint); font-size: 12px; margin: 18px 0 0; }
 
-@media (max-width: 900px) {
-  .dx-layout.ax-layout { grid-template-columns: minmax(0, 1fr); }
-  .ax-layout > .dx-results, .ax-layout > .dx-side { grid-column: auto; grid-row: auto; }
-}
 @media (max-width: 640px) {
   .ax-time { display: block; margin-left: 0; }
 }
