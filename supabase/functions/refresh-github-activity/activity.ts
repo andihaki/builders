@@ -271,6 +271,13 @@ export function contributionsFrom(pullRequests: PullRequestRow[], stored: Contri
 }
 
 /**
+ * How every `why` this function writes begins: what tells its suggestions
+ * from a member's own, so forgetting somebody clears only the former. Keep in
+ * step with 20261028000000_consent_cleanup.sql.
+ */
+export const SUGGESTION_PREFIX = "PR dari @";
+
+/**
  * A repository put forward to the catalogue because a member's pull request
  * was merged into it — pending, for an admin to approve, with the evidence
  * as its reason. One per repository: the earliest merge stands for it.
@@ -285,7 +292,7 @@ export function suggestionsFrom(pullRequests: PullRequestRow[], handle: string):
   return [...first.values()].map((pr) => ({
     repo: pr.repo,
     // oss_repos_why_length: 10 to 280 characters.
-    why: `PR dari @${handle} sudah di-merge: ${pr.url}`.slice(0, 280),
+    why: `${SUGGESTION_PREFIX}${handle} sudah di-merge: ${pr.url}`.slice(0, 280),
     submitted_by: pr.user_id,
   }));
 }

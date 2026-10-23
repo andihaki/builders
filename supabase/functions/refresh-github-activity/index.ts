@@ -32,6 +32,7 @@ import {
   contributionsFrom,
   githubHandle,
   parseResponse,
+  SUGGESTION_PREFIX,
   suggestionsFrom,
   type ContributionRow,
   type Member,
@@ -168,12 +169,41 @@ async function forget(supabase: SupabaseClient, ids: string[]): Promise<void> {
     const { error } = await supabase.from(table).delete().in("user_id", ids);
     if (error) throw new Error(error.message);
   }
+  await forgetSuggestions(supabase, ids, "only");
 }
 
 async function forgetAllBut(supabase: SupabaseClient, ids: string[]): Promise<void> {
   for (const table of ["github_pull_requests", "github_commit_summaries", "github_contributions"]) {
     let request = supabase.from(table).delete();
     request = ids.length > 0 ? request.not("user_id", "in", inList(ids)) : request.not("user_id", "is", null);
+    const { error } = await request;
+    if (error) throw new Error(error.message);
+  }
+  await forgetSuggestions(supabase, ids, "allBut");
+}
+
+/**
+ * The repositories this function put forward for somebody who is forgotten:
+ * one still waiting goes; one already reviewed stays — listed if approved,
+ * and never put forward again if rejected — but no longer names them. A
+ * member's own suggestions, made through the form, are theirs and are left
+ * alone. See 20261028000000_consent_cleanup.sql.
+ */
+async function forgetSuggestions(supabase: SupabaseClient, ids: string[], which: "only" | "allBut"): Promise<void> {
+  const ours = `${SUGGESTION_PREFIX}%`;
+  let waiting = supabase.from("oss_repos").delete().eq("status", "pending").like("why", ours);
+  let reviewed = supabase.from("oss_repos").update({ submitted_by: null, why: "" }).neq("status", "pending").like("why", ours);
+  if (which === "only") {
+    waiting = waiting.in("submitted_by", ids);
+    reviewed = reviewed.in("submitted_by", ids);
+  } else if (ids.length > 0) {
+    waiting = waiting.not("submitted_by", "in", inList(ids));
+    reviewed = reviewed.not("submitted_by", "in", inList(ids));
+  } else {
+    waiting = waiting.not("submitted_by", "is", null);
+    reviewed = reviewed.not("submitted_by", "is", null);
+  }
+  for (const request of [waiting, reviewed]) {
     const { error } = await request;
     if (error) throw new Error(error.message);
   }
