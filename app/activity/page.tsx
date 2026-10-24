@@ -26,6 +26,7 @@ import {
   repoName,
   scopeCounts,
   ACTIVITY_SCOPES,
+  SUMMARY_DAYS,
   type ActivityQuery,
   type ActivityScope,
   type CommitSummaryEntry,
@@ -181,7 +182,7 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
     all: tx(locale, "Semua", "All"),
     merged: tx(locale, "PR merged", "Merged PRs"),
     open: tx(locale, "PR direview", "PRs in review"),
-    commits: tx(locale, "Commit", "Commits"),
+    commits: tx(locale, "Ringkasan", "Summaries"),
   };
   const memberName = people.find(({ person }) => person.handle.toLowerCase() === current.member.toLowerCase())?.person.name;
   const active: ActiveFilter[] = [
@@ -490,7 +491,7 @@ function PullRequestEvent({
   );
 }
 
-/** Work on one's own repositories, one event per person. */
+/** Work on one's own repositories — commits and merged PRs — one event per person. */
 function CommitSummaryEvent({
   entry,
   locale,
@@ -508,12 +509,8 @@ function CommitSummaryEvent({
     <div className="ax-event-body">
       <p className="ax-event-line">
         <Who entry={entry} />{" "}
-        {tx(
-          locale,
-          `membuat ${entry.commits} commit di ${entry.repos.length} repo miliknya`,
-          `made ${entry.commits} ${entry.commits === 1 ? "commit" : "commits"} in ${entry.repos.length} of their own ${entry.repos.length === 1 ? "repo" : "repos"}`,
-        )}
-        <span className="ax-time">{tx(locale, "30 hari terakhir", "last 30 days")}</span>
+        {ownWork(entry, locale)}
+        <span className="ax-time">{tx(locale, `${SUMMARY_DAYS} hari terakhir`, `last ${SUMMARY_DAYS} days`)}</span>
       </p>
       <ul className="ax-repos">
         {named.map((repo) => (
@@ -521,13 +518,28 @@ function CommitSummaryEvent({
             <a href={`https://github.com/${repo.repo}`} target="_blank" rel="noopener noreferrer">
               {repoName(repo.repo)}
             </a>
-            <span>{repo.commits}</span>
+            {repo.commits > 0 ? <span>{repo.commits}</span> : null}
           </li>
         ))}
         {more > 0 ? <li className="ax-repos-more">+{more}</li> : null}
       </ul>
       <ReactionBar url={entry.key} initial={reactions} viewerName={viewerName} />
     </div>
+  );
+}
+
+/** "made 205 commits and merged 40 pull requests in 7 of their own repos", leaving out what is zero. */
+function ownWork(entry: CommitSummaryEntry, locale: Locale): string {
+  const repos = entry.repos.length;
+  const id = [entry.commits > 0 ? `membuat ${entry.commits} commit` : "", entry.merged > 0 ? `merge ${entry.merged} PR` : ""].filter(Boolean);
+  const en = [
+    entry.commits > 0 ? `made ${entry.commits} ${entry.commits === 1 ? "commit" : "commits"}` : "",
+    entry.merged > 0 ? `merged ${entry.merged} ${entry.merged === 1 ? "pull request" : "pull requests"}` : "",
+  ].filter(Boolean);
+  return tx(
+    locale,
+    `${id.join(" dan ")} di ${repos} repo miliknya`,
+    `${en.join(" and ")} in ${repos} of their own ${repos === 1 ? "repo" : "repos"}`,
   );
 }
 

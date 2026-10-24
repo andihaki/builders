@@ -245,23 +245,48 @@ test("a person's pull requests to one repo on one day are one entry", () => {
 test("contributions and own work are told apart, like local and global", async () => {
   const { inScope, scopeCounts, activityStats } = await import("../app/lib/github-activity.ts");
   const person = { id: ana.id, username: "ana", name: "Ana", handle: "ana" };
-  const row = (repo, number, own) => ({
-    url: `https://github.com/${repo}/pull/${number}`, user_id: ana.id, repo, number, title: "", state: "merged",
-    opened_at: "2026-10-01T00:00:00Z", merged_at: `2026-10-0${number}T00:00:00Z`, checked_at: "", own, person,
+  const row = (repo, number, own, merged_at = `2026-10-0${number}T00:00:00Z`) => ({
+    url: `https://github.com/${repo}/pull/${number}`, user_id: ana.id, repo, number, title: "", state: merged_at ? "merged" : "open",
+    opened_at: "2026-10-01T00:00:00Z", merged_at, checked_at: "", own, person,
   });
   const entries = buildGitHubActivity(
-    [row("org/tool", 1, false), row("work/app", 2, true), row("work/app", 3, true)],
+    [
+      row("org/tool", 1, false),
+      // Their own: counted into the summary, not listed one by one.
+      row("work/app", 2, true),
+      row("work/app", 3, true),
+      row("ana/side", 5, true),
+      row("ana/new", 6, true),
+      // Still in review, or merged before the summary's 30 days: not counted.
+      row("ana/side", 7, true, null),
+      row("ana/side", 8, true, "2026-08-01T00:00:00Z"),
+    ],
     [{ user_id: ana.id, commits: 4, repos: [{ repo: "ana/side", commits: 4 }], last_commit_at: "2026-10-04T00:00:00Z", since: "2026-09-22", checked_at: "", person }],
+    "Asia/Jakarta",
+    now,
   );
-  assert.deepEqual(scopeCounts(entries), { all: 4, external: 1, own: 3 });
+  assert.deepEqual(scopeCounts(entries), { all: 2, external: 1, own: 1 });
   assert.deepEqual(inScope(entries, "external").map((entry) => entry.key), ["https://github.com/org/tool/pull/1"]);
-  assert.deepEqual(inScope(entries, "own").map((entry) => entry.key), [
-    `commits:${ana.id}`,
-    "https://github.com/work/app/pull/3",
-    "https://github.com/work/app/pull/2",
-  ]);
-  // The heading counts contributions only, whatever is showing.
+  const [summary] = inScope(entries, "own");
+  assert.equal(summary.key, `commits:${ana.id}`);
+  assert.equal(summary.commits, 4);
+  assert.equal(summary.merged, 4);
+  assert.deepEqual(summary.repos, [{ repo: "ana/side", commits: 4 }, { repo: "work/app", commits: 0 }, { repo: "ana/new", commits: 0 }]);
+  // The newest of its commits and merges.
+  assert.equal(summary.at, "2026-10-06T00:00:00Z");
+  // The heading counts contributions only.
   assert.deepEqual(activityStats(entries), { people: 1, merged: 1, open: 0, repos: 1 });
+});
+
+test("own pull requests alone still make a summary", () => {
+  const person = { id: ana.id, username: "ana", name: "Ana", handle: "ana" };
+  const entries = buildGitHubActivity(
+    [{ url: "https://github.com/work/app/pull/1", user_id: ana.id, repo: "work/app", number: 1, title: "", state: "merged", opened_at: "2026-10-01T00:00:00Z", merged_at: "2026-10-20T00:00:00Z", checked_at: "", own: true, person }],
+    [],
+    "Asia/Jakarta",
+    now,
+  );
+  assert.deepEqual(entries.map((entry) => [entry.kind, entry.commits, entry.merged, entry.repos]), [["commit_summary", 0, 1, [{ repo: "work/app", commits: 0 }]]]);
 });
 
 test("the page's numbers and the sidebar's groups come from the same entries", async () => {
@@ -276,13 +301,13 @@ test("the page's numbers and the sidebar's groups come from the same entries", a
     pr("1", ana, "org/a", "merged", "2026-10-21T00:00:00Z", 3),
     pr("2", ana, "org/b", "open", "2026-10-10T00:00:00Z"),
     pr("3", budi, "org/a", "merged", "2026-08-01T00:00:00Z"),
-    { kind: "commit_summary", key: "c", person: budi, commits: 4, repos: [], since: "", at: "2026-10-20T00:00:00Z" },
+    { kind: "commit_summary", key: "c", person: budi, commits: 4, merged: 2, repos: [], since: "", at: "2026-10-20T00:00:00Z" },
   ];
   // Numbers count pull requests; the kind facets count entries, as the list shows them.
   assert.deepEqual(activityStats(entries), { people: 2, merged: 4, open: 1, repos: 2 });
   assert.deepEqual(kindCounts(entries), { all: 4, merged: 2, open: 1, commits: 1 });
   assert.deepEqual(activityRepos(entries), [{ repo: "org/a", count: 4 }, { repo: "org/b", count: 1 }]);
-  assert.deepEqual(activityPeople(entries).map(({ person, count }) => [person.handle, count]), [["Ana", 4], ["budi", 1]]);
+  assert.deepEqual(activityPeople(entries).map(({ person, count }) => [person.handle, count]), [["Ana", 4], ["budi", 3]]);
 });
 
 test("merged pull requests become lasting contributions and pending suggestions", async () => {
