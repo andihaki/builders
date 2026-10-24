@@ -2,7 +2,7 @@
 export const siteUrl = "https://builders.swegrowth.id";
 
 /** This site's own repository, `owner/name` — the site is open source too. */
-export const sourceRepo = "zikrulihsan/builders";
+export const sourceRepo = "swegrowthid/builders";
 
 /**
  * The WhatsApp community where contributors share what they are working on.

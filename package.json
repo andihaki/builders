@@ -7,10 +7,10 @@
   "homepage": "https://builders.swegrowth.id",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zikrulihsan/ahsanproject.git"
+    "url": "git+https://github.com/swegrowthid/builders.git"
   },
   "bugs": {
-    "url": "https://github.com/zikrulihsan/ahsanproject/issues"
+    "url": "https://github.com/swegrowthid/builders/issues"
   },
   "engines": {
     "node": ">=22.13.0"

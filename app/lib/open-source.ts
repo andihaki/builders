@@ -74,7 +74,7 @@ export type OpenSourceRepo = {
 export const SEED_REPOS: OpenSourceRepo[] = [
   {
     id: 0,
-    owner: "zikrulihsan",
+    owner: "swegrowthid",
     repo: "builders",
     list: "internal",
     reasons: ["beginner-friendly"],

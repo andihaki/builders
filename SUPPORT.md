@@ -2,8 +2,8 @@
 
 Use the channel that best matches what you need:
 
-- For a reproducible defect, [open a bug report](https://github.com/zikrulihsan/ahsanproject/issues/new?template=bug_report.yml).
-- For a product idea or improvement, [open a feature request](https://github.com/zikrulihsan/ahsanproject/issues/new?template=feature_request.yml).
+- For a reproducible defect, [open a bug report](https://github.com/swegrowthid/builders/issues/new?template=bug_report.yml).
+- For a product idea or improvement, [open a feature request](https://github.com/swegrowthid/builders/issues/new?template=feature_request.yml).
 - For setup and usage questions, start a GitHub Discussion after Discussions
   has been enabled for the repository.
 - For a security vulnerability, follow [SECURITY.md](SECURITY.md) and report it

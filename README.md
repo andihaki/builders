@@ -1,6 +1,6 @@
 # Builders
 
-[![CI](https://github.com/zikrulihsan/ahsanproject/actions/workflows/ci.yml/badge.svg)](https://github.com/zikrulihsan/ahsanproject/actions/workflows/ci.yml)
+[![CI](https://github.com/swegrowthid/builders/actions/workflows/ci.yml/badge.svg)](https://github.com/swegrowthid/builders/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A directory of projects you can contribute to. One list, one search box, and
@@ -24,7 +24,7 @@ building, and what they helped build.
 
 Next.js on Netlify, with Supabase for both the database and sign-in.
 
-[Try the live site](https://builders.swegrowth.id) · [Report a bug](https://github.com/zikrulihsan/ahsanproject/issues/new?template=bug_report.yml) · [Suggest an improvement](https://github.com/zikrulihsan/ahsanproject/issues/new?template=feature_request.yml)
+[Try the live site](https://builders.swegrowth.id) · [Report a bug](https://github.com/swegrowthid/builders/issues/new?template=bug_report.yml) · [Suggest an improvement](https://github.com/swegrowthid/builders/issues/new?template=feature_request.yml)
 
 > [!NOTE]
 > Builders is under active development. The database schema and user-facing

@@ -11,7 +11,7 @@ are not supported.
 Please do not disclose a suspected vulnerability in a public issue, discussion,
 pull request, or social post.
 
-Use GitHub's [private vulnerability reporting form](https://github.com/zikrulihsan/ahsanproject/security/advisories/new).
+Use GitHub's [private vulnerability reporting form](https://github.com/swegrowthid/builders/security/advisories/new).
 Include, when possible:
 
 - the affected route, component, policy, or migration;

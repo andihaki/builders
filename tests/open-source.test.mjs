@@ -64,7 +64,7 @@ test("a database row becomes a repo, and a malformed one is dropped", () => {
 });
 
 test("the only built-in repo is this site's own, and only Indonesian maintainers make a hand-set badge", () => {
-  assert.deepEqual(SEED_REPOS.map((repo) => `${repo.owner}/${repo.repo}`), ["zikrulihsan/builders"]);
+  assert.deepEqual(SEED_REPOS.map((repo) => `${repo.owner}/${repo.repo}`), ["swegrowthid/builders"]);
   assert.deepEqual(repoBadges({ indonesian: true }), [{ kind: "indonesian" }]);
   assert.deepEqual(repoBadges({ indonesian: false }), []);
 });
