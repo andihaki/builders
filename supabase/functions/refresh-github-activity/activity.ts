@@ -7,9 +7,19 @@
  * same arrangement as refresh-repos/signals.ts.
  *
  * One GraphQL query carries, per member, an aliased `user` field (commits per
- * repository in the window, for the summary of their own repositories) and an
- * aliased `search` for their public pull requests updated in the window. Ten
- * members cost one request.
+ * repository in the window, for the summary of their own repositories, and
+ * the organisations they show publicly) and an aliased `search` for their
+ * public pull requests updated in the window. Ten members cost one request.
+ *
+ * The search returns at most SEARCH_SIZE pull requests. When somebody's own
+ * repositories fill it, a second search for just them leaves those owners
+ * out, so their contributions elsewhere are not crowded off: see
+ * `narrowSearch` and `buildSearchQuery`.
+ *
+ * "Their own" is wider than the repositories under their own login: a
+ * repository of an organisation they belong to is their own work too, not a
+ * contribution to somebody else's project. Otherwise a member who merges
+ * their own pull requests into their company's repository fills the page.
  */
 
 /** How many members go into one request. */
@@ -18,6 +28,10 @@ export const BATCH_SIZE = 10;
 export const PULL_REQUEST_DAYS = 90;
 /** Commits to a member's own repositories are summed over this many days. */
 export const COMMIT_DAYS = 30;
+/** Pull requests one search returns. */
+export const SEARCH_SIZE = 50;
+/** GitHub refuses a search query longer than this. */
+const SEARCH_QUERY_MAX = 256;
 
 /** One row of public.github_pull_requests, as the function writes it. */
 export type PullRequestRow = {
@@ -30,6 +44,8 @@ export type PullRequestRow = {
   opened_at: string;
   merged_at: string | null;
   checked_at: string;
+  /** To the member's own repository or their organisation's: their own work, not a contribution. */
+  own: boolean;
 };
 
 /** One row of public.github_commit_summaries. */
@@ -55,10 +71,23 @@ export type MemberActivity =
       summary: CommitSummaryRow | null;
       /** The pull request search failed: keep the rows already stored rather than clearing them. */
       searchFailed: boolean;
+      /**
+       * Owners to leave out of a second search, because their repositories
+       * — the member's own — filled this one; empty when it was not full.
+       */
+      narrowSearch: string[];
     };
+
+type GraphQLBody = { data?: Record<string, unknown> | null; errors?: Array<{ path?: unknown[]; message?: string }> };
 
 const HANDLE = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 const REPO_KEY = /^[a-z0-9](?:[a-z0-9-]{0,38})\/[a-z0-9._-]{1,100}$/;
+/**
+ * How GitHub says a pull request's author stands to the repository: they own
+ * it, or belong to the organisation that does — even when that membership is
+ * private, which `organizations` below cannot show.
+ */
+const INSIDER = new Set(["OWNER", "MEMBER"]);
 
 /**
  * The GitHub username in a profile's github field — the same rule as
@@ -86,38 +115,58 @@ export function daysAgo(days: number, now: Date): string {
 
 export function buildQuery(members: Member[], now: Date): string {
   const commitsSince = daysAgo(COMMIT_DAYS, now);
-  const prsSince = daysAgo(PULL_REQUEST_DAYS, now).slice(0, 10);
 
   const fields = members.map(({ handle }, index) => {
-    // `is:public`: the function's token may be able to see private
-    // repositories, and nothing private belongs on a public page.
-    const search = `is:pr is:public author:${handle} updated:>=${prsSince}`;
     return `
   u${index}: user(login: ${JSON.stringify(handle)}) {
     login
+    organizations(first: 100) { nodes { login } }
     contributionsCollection(from: ${JSON.stringify(commitsSince)}) {
       commitContributionsByRepository(maxRepositories: 25) {
         repository { nameWithOwner isPrivate owner { login } }
         contributions(first: 1, orderBy: { field: OCCURRED_AT, direction: DESC }) { totalCount nodes { occurredAt } }
       }
     }
+  }${searchField(index, handle, [], now)}`;
+  });
+  return `query {${fields.join("")}\n}`;
+}
+
+/**
+ * The second search, for the members whose first one their own repositories
+ * filled: the same aliases, so parseResponse can lay it over the first.
+ */
+export function buildSearchQuery(searches: { index: number; handle: string; exclude: string[] }[], now: Date): string {
+  return `query {${searches.map(({ index, handle, exclude }) => searchField(index, handle, exclude, now)).join("")}\n}`;
+}
+
+function searchField(index: number, handle: string, exclude: string[], now: Date): string {
+  // `is:public`: the function's token may be able to see private
+  // repositories, and nothing private belongs on a public page.
+  let search = `is:pr is:public author:${handle} updated:>=${daysAgo(PULL_REQUEST_DAYS, now).slice(0, 10)}`;
+  // `-user:` leaves out an organisation's repositories as well as a person's.
+  // Most crowded first, as many as fit.
+  for (const owner of exclude) {
+    if (search.length + ` -user:${owner}`.length > SEARCH_QUERY_MAX) break;
+    search += ` -user:${owner}`;
   }
-  p${index}: search(type: ISSUE, first: 50, query: ${JSON.stringify(search)}) {
+  return `
+  p${index}: search(type: ISSUE, first: ${SEARCH_SIZE}, query: ${JSON.stringify(search)}) {
+    issueCount
     nodes {
       ... on PullRequest {
-        url number title state createdAt mergedAt
+        url number title state createdAt mergedAt authorAssociation
         repository { nameWithOwner isPrivate owner { login } }
       }
     }
   }`;
-  });
-  return `query {${fields.join("")}\n}`;
 }
 
 type Repository = { nameWithOwner?: unknown; isPrivate?: unknown; owner?: { login?: unknown } | null } | null | undefined;
 
 type UserNode = {
   login?: unknown;
+  organizations?: { nodes?: Array<{ login?: unknown } | null> | null } | null;
   contributionsCollection?: {
     commitContributionsByRepository?: Array<{
       repository?: Repository;
@@ -133,6 +182,7 @@ type PullRequestNode = {
   state?: unknown;
   createdAt?: unknown;
   mergedAt?: unknown;
+  authorAssociation?: unknown;
   repository?: Repository;
 } | null;
 
@@ -147,35 +197,60 @@ function publicRepo(repository: Repository): { key: string; owner: string } | nu
 /**
  * Splits what GitHub said into the two kinds of row.
  *
- * Pull requests to somebody else's repository are kept one by one: open, or
- * merged in the window; one closed without merging is dropped. Work on the
- * member's own repositories is folded into a single commit summary instead,
- * so a busy week on a side project reads as one line rather than a page.
+ * Pull requests are kept one by one: open, or merged in the window; one
+ * closed without merging is dropped. Those to the member's own repositories —
+ * under their login, or an organisation they belong to — are marked `own`:
+ * their own work, shown apart from contributions. Commits to those
+ * repositories are folded into a single summary, so a busy week on a side
+ * project reads as one line rather than a page.
  * A search that failed comes back as no pull requests, and the caller keeps
  * what it had — the same caution as refresh-repos.
+ *
+ * `narrowed` is the answer to buildSearchQuery, when one was asked: its pull
+ * requests join the first search's, which still decides whose repositories
+ * are the member's own.
  */
-export function parseResponse(
-  members: Member[],
-  body: { data?: Record<string, unknown> | null; errors?: Array<{ path?: unknown[]; message?: string }> },
-  now: Date,
-): MemberActivity[] {
+export function parseResponse(members: Member[], body: GraphQLBody, now: Date, narrowed?: GraphQLBody): MemberActivity[] {
   const data = body.data ?? {};
   const checkedAt = now.toISOString();
   const prsSince = Date.parse(daysAgo(PULL_REQUEST_DAYS, now));
-  const failed = (alias: string) =>
-    body.errors?.some((error) => Array.isArray(error.path) && error.path[0] === alias) ?? false;
+  const failed = (answer: GraphQLBody, alias: string) =>
+    answer.errors?.some((error) => Array.isArray(error.path) && error.path[0] === alias) ?? false;
+  type Search = { issueCount?: unknown; nodes?: PullRequestNode[] | null } | null | undefined;
 
   return members.map((member, index) => {
     const user = data[`u${index}`] as UserNode | undefined;
     if (!user) return { member, found: false };
-    const login = String(user.login ?? member.handle).toLowerCase();
+    const searchFailed = failed(body, `p${index}`);
+    const search = searchFailed ? undefined : (data[`p${index}`] as Search);
+    const nodes = search?.nodes ?? [];
 
+    // Whose repositories count as the member's own.
+    const owners = new Set([String(user.login ?? member.handle).toLowerCase()]);
+    for (const org of user.organizations?.nodes ?? []) if (org?.login) owners.add(String(org.login).toLowerCase());
+    for (const node of nodes) {
+      const repo = publicRepo(node?.repository);
+      if (repo && INSIDER.has(String(node?.authorAssociation ?? ""))) owners.add(repo.owner);
+    }
+
+    // A full search that the member's own repositories took places in.
+    const crowding = new Map<string, number>();
+    for (const node of nodes) {
+      const repo = publicRepo(node?.repository);
+      if (repo && owners.has(repo.owner)) crowding.set(repo.owner, (crowding.get(repo.owner) ?? 0) + 1);
+    }
+    const full = Number(search?.issueCount ?? 0) > nodes.length;
+    const narrowSearch = full ? [...crowding].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([owner]) => owner) : [];
+
+    const second = narrowed && !failed(narrowed, `p${index}`) ? (narrowed.data?.[`p${index}`] as Search) : undefined;
+    const seen = new Set<string>();
     const pullRequests: PullRequestRow[] = [];
-    const search = data[`p${index}`] as { nodes?: PullRequestNode[] | null } | null | undefined;
-    for (const node of failed(`p${index}`) ? [] : search?.nodes ?? []) {
+    for (const node of [...nodes, ...(second?.nodes ?? [])]) {
       if (!node) continue;
       const repo = publicRepo(node.repository);
-      if (!repo || repo.owner === login) continue;
+      if (!repo) continue;
+      if (seen.has(String(node.url))) continue;
+      seen.add(String(node.url));
       const url = String(node.url ?? "");
       const number = Number(node.number);
       const openedAt = String(node.createdAt ?? "");
@@ -183,9 +258,9 @@ export function parseResponse(
 
       const mergedAt = typeof node.mergedAt === "string" ? node.mergedAt : null;
       if (node.state === "MERGED" && mergedAt && Date.parse(mergedAt) >= prsSince) {
-        pullRequests.push(row(member, repo.key, url, number, node.title, "merged", openedAt, mergedAt, checkedAt));
+        pullRequests.push(row(member, repo.key, url, number, node.title, "merged", openedAt, mergedAt, checkedAt, owners.has(repo.owner)));
       } else if (node.state === "OPEN") {
-        pullRequests.push(row(member, repo.key, url, number, node.title, "open", openedAt, null, checkedAt));
+        pullRequests.push(row(member, repo.key, url, number, node.title, "open", openedAt, null, checkedAt, owners.has(repo.owner)));
       }
     }
 
@@ -194,7 +269,7 @@ export function parseResponse(
     for (const entry of user.contributionsCollection?.commitContributionsByRepository ?? []) {
       const repo = publicRepo(entry?.repository);
       const commits = Number(entry?.contributions?.totalCount ?? 0);
-      if (!repo || repo.owner !== login || !Number.isInteger(commits) || commits <= 0) continue;
+      if (!repo || !owners.has(repo.owner) || !Number.isInteger(commits) || commits <= 0) continue;
       own.push({ repo: repo.key, commits });
       const latest = entry?.contributions?.nodes?.[0]?.occurredAt;
       if (typeof latest === "string" && (!lastCommitAt || latest > lastCommitAt)) lastCommitAt = latest;
@@ -213,7 +288,7 @@ export function parseResponse(
             checked_at: checkedAt,
           };
 
-    return { member, found: true, pullRequests, summary, searchFailed: failed(`p${index}`) };
+    return { member, found: true, pullRequests, summary, searchFailed, narrowSearch };
   });
 }
 
@@ -227,6 +302,7 @@ function row(
   openedAt: string,
   mergedAt: string | null,
   checkedAt: string,
+  own: boolean,
 ): PullRequestRow {
   return {
     url,
@@ -238,6 +314,7 @@ function row(
     opened_at: openedAt,
     merged_at: mergedAt,
     checked_at: checkedAt,
+    own,
   };
 }
 
@@ -251,14 +328,15 @@ export function chunk<T>(items: T[], size: number): T[][] {
 export type ContributionRow = { user_id: string; repo: string; first_merged_at: string; last_merged_at: string };
 
 /**
- * The member's merged pull requests folded into one row per repository, kept
+ * The member's merged pull requests to other people's repositories folded
+ * into one row per repository, kept
  * against what is already stored: the first merge stays the earliest ever
  * seen even after it has left the 90-day window, the last moves forward.
  */
 export function contributionsFrom(pullRequests: PullRequestRow[], stored: ContributionRow[]): ContributionRow[] {
   const byRepo = new Map(stored.map((row) => [row.repo, { ...row }]));
   for (const pr of pullRequests) {
-    if (pr.state !== "merged" || !pr.merged_at) continue;
+    if (pr.state !== "merged" || !pr.merged_at || pr.own) continue;
     const row = byRepo.get(pr.repo);
     if (!row) {
       byRepo.set(pr.repo, { user_id: pr.user_id, repo: pr.repo, first_merged_at: pr.merged_at, last_merged_at: pr.merged_at });
@@ -285,7 +363,7 @@ export const SUGGESTION_PREFIX = "PR dari @";
 export function suggestionsFrom(pullRequests: PullRequestRow[], handle: string): { repo: string; why: string; submitted_by: string }[] {
   const first = new Map<string, PullRequestRow>();
   for (const pr of pullRequests) {
-    if (pr.state !== "merged" || !pr.merged_at) continue;
+    if (pr.state !== "merged" || !pr.merged_at || pr.own) continue;
     const seen = first.get(pr.repo);
     if (!seen || pr.merged_at < (seen.merged_at ?? "")) first.set(pr.repo, pr);
   }

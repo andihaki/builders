@@ -225,6 +225,8 @@ export type GitHubPullRequestRow = {
   opened_at: string;
   merged_at: string | null;
   checked_at: string;
+  /** 20261030000000_github_own_pull_requests.sql — to the member's own or their organisation's repository. */
+  own: boolean;
 };
 
 /** 20261024000000_github_activity.sql — commits to a member's own repositories since `since`. */

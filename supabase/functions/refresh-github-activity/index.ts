@@ -28,6 +28,7 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.5
 import {
   BATCH_SIZE,
   buildQuery,
+  buildSearchQuery,
   chunk,
   contributionsFrom,
   githubHandle,
@@ -87,22 +88,39 @@ async function refresh(asked: string[] | null): Promise<void> {
 
   const now = new Date();
   for (const batch of chunk(members, BATCH_SIZE)) {
-    const response = await fetch("https://api.github.com/graphql", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "User-Agent": "builders-refresh-github-activity" },
-      body: JSON.stringify({ query: buildQuery(batch, now) }),
-      signal: AbortSignal.timeout(25_000),
-    });
+    const response = await askGitHub(token, buildQuery(batch, now));
     if (!response.ok) {
       // Leave every row as it was: yesterday's activity beats none.
       console.error(`[refresh-github-activity] GitHub answered ${response.status} for ${batch.length} members.`);
       continue;
     }
+    const body = await response.json();
+    let activities = parseResponse(batch, body, now);
 
-    for (const activity of parseResponse(batch, await response.json(), now)) {
+    // Somebody whose own repositories filled the search: ask again without
+    // them. If that fails, the first answer stands.
+    const narrow = activities.flatMap((activity, index) =>
+      activity.found && activity.narrowSearch.length > 0 ? [{ index, handle: activity.member.handle, exclude: activity.narrowSearch }] : [],
+    );
+    if (narrow.length > 0) {
+      const again = await askGitHub(token, buildSearchQuery(narrow, now));
+      if (again.ok) activities = parseResponse(batch, body, now, await again.json());
+      else console.error(`[refresh-github-activity] GitHub answered ${again.status} to the narrowed search.`);
+    }
+
+    for (const activity of activities) {
       await store(supabase, activity);
     }
   }
+}
+
+function askGitHub(token: string, query: string): Promise<Response> {
+  return fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "User-Agent": "builders-refresh-github-activity" },
+    body: JSON.stringify({ query }),
+    signal: AbortSignal.timeout(25_000),
+  });
 }
 
 async function store(supabase: SupabaseClient, activity: MemberActivity): Promise<void> {
@@ -140,7 +158,8 @@ async function store(supabase: SupabaseClient, activity: MemberActivity): Promis
  * forward to the catalogue as pending. See 20261027000100_github_contributions.sql.
  */
 async function keepContributions(supabase: SupabaseClient, activity: Extract<MemberActivity, { found: true }>): Promise<void> {
-  const merged = activity.pullRequests.filter((pr) => pr.state === "merged");
+  // Their own repositories' pull requests are their own work, not contributions.
+  const merged = activity.pullRequests.filter((pr) => pr.state === "merged" && !pr.own);
   if (merged.length === 0) return;
 
   const { data, error } = await supabase

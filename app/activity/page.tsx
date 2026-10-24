@@ -17,16 +17,22 @@ import {
   activityStats,
   dayKey,
   groupByDay,
+  inScope,
+  isActivityScope,
   isGitHubActivityFilter,
   kindCounts,
   ownerAvatar,
   queryActivity,
   repoName,
+  scopeCounts,
+  ACTIVITY_SCOPES,
   type ActivityQuery,
+  type ActivityScope,
   type CommitSummaryEntry,
   type GitHubActivityEntry,
   type GitHubActivityFilter,
   type PullRequestEntry,
+  type PullRequestItem,
 } from "../lib/github-activity";
 import { readPublicly } from "../lib/public-read";
 import { currentLocale } from "../lib/locale-server";
@@ -48,10 +54,12 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const PAGE_SIZE = 20;
 /** How many repositories a commit summary names before "+N". */
 const SUMMARY_REPOS = 4;
+/** Pull requests listed in a grouped entry before the rest fold away. */
+const PRS_SHOWN = 3;
 /** Repositories shown in the sidebar before the rest fold behind "More…". */
 const REPOS_SHOWN = 8;
 
-type Query = ActivityQuery & { page: number };
+type Query = ActivityQuery & { scope: ActivityScope; page: number };
 
 const HANDLE = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 const REPO_KEY = /^[a-z0-9](?:[a-z0-9-]{0,38})\/[a-z0-9._-]{1,100}$/;
@@ -62,11 +70,14 @@ function one(value: string | string[] | undefined): string {
 
 function readQuery(query: Record<string, string | string[] | undefined>): Query {
   const kind = one(query.show);
+  const scope = one(query.scope);
   const member = one(query.member).trim();
   const repo = one(query.repo).trim().toLowerCase();
   const page = Number(one(query.page));
   return {
     kind: isGitHubActivityFilter(kind) ? kind : "all",
+    // Contributions unless asked otherwise: what the page is for.
+    scope: isActivityScope(scope) ? scope : "external",
     member: HANDLE.test(member) ? member : "",
     repo: REPO_KEY.test(repo) ? repo : "",
     q: one(query.q).slice(0, 100),
@@ -77,6 +88,7 @@ function readQuery(query: Record<string, string | string[] | undefined>): Query 
 /** The address for a query; changing any filter goes back to page one. */
 function pathFor(query: Partial<Query>, page = 1): string {
   const params = new URLSearchParams();
+  if (query.scope && query.scope !== "external") params.set("scope", query.scope);
   if (query.kind && query.kind !== "all") params.set("show", query.kind);
   if (query.member) params.set("member", query.member);
   if (query.repo) params.set("repo", query.repo);
@@ -148,20 +160,28 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
 
   const all = result.value;
   const stats = activityStats(all);
-  const kinds = kindCounts(all);
-  const people = activityPeople(all);
-  const repos = activityRepos(all);
-  const matched = queryActivity(all, current);
+  const scopes = scopeCounts(all);
+  // The sidebar narrows within the scope showing, as the directory's does within local or global.
+  const scoped = inScope(all, current.scope);
+  const kinds = kindCounts(scoped);
+  const people = activityPeople(scoped);
+  const repos = activityRepos(scoped);
+  const matched = queryActivity(scoped, current);
   const pages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
   const page = Math.min(current.page, pages);
   const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const filtered = current.kind !== "all" || Boolean(current.member || current.repo || current.q.trim());
+  const scopeLabels: Record<ActivityScope, string> = {
+    all: tx(locale, "Semua", "All"),
+    external: tx(locale, "Ke luar", "Contributions"),
+    own: tx(locale, "Sendiri", "Own"),
+  };
 
   const kindLabels: Record<GitHubActivityFilter, string> = {
     all: tx(locale, "Semua", "All"),
     merged: tx(locale, "PR merged", "Merged PRs"),
     open: tx(locale, "PR direview", "PRs in review"),
-    commits: tx(locale, "Repo sendiri", "Own repos"),
+    commits: tx(locale, "Commit", "Commits"),
   };
   const memberName = people.find(({ person }) => person.handle.toLowerCase() === current.member.toLowerCase())?.person.name;
   const active: ActiveFilter[] = [
@@ -192,17 +212,19 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
       <div className="dx-layout">
         <FilterPanel active={active}>
           <FacetGroup title={tx(locale, "Jenis", "Kind")}>
-            {(["all", "merged", "open", "commits"] as const).map((kind) => (
-              <FacetLink
-                key={kind}
-                active={current.kind === kind}
-                href={pathFor({ ...current, kind: current.kind === kind && kind !== "all" ? "all" : kind })}
-                count={kinds[kind]}
-                icon={kind === "all" ? undefined : <KindIcon kind={kind} />}
-              >
-                {kindLabels[kind]}
-              </FacetLink>
-            ))}
+            {(["all", "merged", "open", "commits"] as const)
+              .filter((kind) => kind === "all" || kinds[kind] > 0 || current.kind === kind)
+              .map((kind) => (
+                <FacetLink
+                  key={kind}
+                  active={current.kind === kind}
+                  href={pathFor({ ...current, kind: current.kind === kind && kind !== "all" ? "all" : kind })}
+                  count={kinds[kind]}
+                  icon={kind === "all" ? undefined : <KindIcon kind={kind} />}
+                >
+                  {kindLabels[kind]}
+                </FacetLink>
+              ))}
           </FacetGroup>
 
           {people.length > 0 ? (
@@ -249,6 +271,7 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
         <section className="dx-results" aria-label={tx(locale, "Aktivitas", "Activity")}>
           <div className="dx-toolbar">
             <form className="dx-search" action="/activity" role="search">
+              {current.scope !== "external" ? <input type="hidden" name="scope" value={current.scope} /> : null}
               {current.kind !== "all" ? <input type="hidden" name="show" value={current.kind} /> : null}
               {current.member ? <input type="hidden" name="member" value={current.member} /> : null}
               {current.repo ? <input type="hidden" name="repo" value={current.repo} /> : null}
@@ -258,9 +281,25 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
                 <input type="search" name="q" defaultValue={current.q} placeholder={tx(locale, "Cari judul PR, repo, atau nama…", "Search PR titles, repos, or names…")} />
               </label>
             </form>
+            {/* Whose repositories: the same toggle as the directory's local and
+                global, in plain sight rather than in the sidebar. */}
+            <nav className="dx-scope" aria-label={tx(locale, "Repo orang lain atau sendiri", "Other people's repos or their own")}>
+              {ACTIVITY_SCOPES.map((scope) => (
+                <Link
+                  key={scope}
+                  className={current.scope === scope ? "is-active" : ""}
+                  aria-current={current.scope === scope ? "true" : undefined}
+                  // A new scope starts its sidebar afresh: a member or repo picked in one may not be in the other.
+                  href={pathFor({ scope, q: current.q })}
+                >
+                  {scopeLabels[scope]}
+                  {scope !== "all" ? <span>{scopes[scope]}</span> : null}
+                </Link>
+              ))}
+            </nav>
             <p className="dx-count" role="status">
               <strong>{matched.length}</strong> {tx(locale, "aktivitas", "entries")}
-              {filtered ? <> · <Link href="/activity">reset</Link></> : null}
+              {filtered ? <> · <Link href={pathFor({ scope: current.scope })}>reset</Link></> : null}
             </p>
           </div>
 
@@ -276,7 +315,7 @@ async function ActivityBody({ query, locale }: { query: SearchParams; locale: Lo
                 {all.length === 0
                   ? tx(locale, "Belum ada aktivitas yang tercatat. ", "No activity recorded yet. ")
                   : tx(locale, "Tidak ada aktivitas yang cocok. ", "No activity matches. ")}
-                {filtered ? <Link href="/activity">{tx(locale, "Reset filter", "Reset filters")}</Link> : null}
+                {filtered ? <Link href={pathFor({ scope: current.scope })}>{tx(locale, "Reset filter", "Reset filters")}</Link> : null}
               </p>
               <p>
                 {tx(locale, "Mau muncul di sini? Isi GitHub-mu dan centang “Tampilkan aktivitas GitHub-ku” di ", "Want to show up here? Add your GitHub and tick “Show my GitHub activity” on ")}
@@ -395,7 +434,10 @@ function RepoLink({ repo }: { repo: string }) {
   );
 }
 
-/** "Zikrul got a pull request merged in owner/repo", then the PR itself. */
+/**
+ * "Zikrul got a pull request merged in owner/repo", then the PR itself; or
+ * "got 4 pull requests merged", with the first few and the rest folded away.
+ */
 function PullRequestEvent({
   entry,
   locale,
@@ -408,20 +450,41 @@ function PullRequestEvent({
   viewerName: string | null;
 }) {
   const merged = entry.state === "merged";
+  const count = entry.pullRequests.length;
+  const shown = entry.pullRequests.slice(0, count > PRS_SHOWN ? PRS_SHOWN - 1 : PRS_SHOWN);
+  const folded = entry.pullRequests.slice(shown.length);
+  const what =
+    count === 1
+      ? merged
+        ? tx(locale, "PR-nya di-merge di", "got a pull request merged in")
+        : tx(locale, "membuka pull request di", "opened a pull request in")
+      : merged
+        ? tx(locale, `${count} PR-nya di-merge di`, `got ${count} pull requests merged in`)
+        : tx(locale, `membuka ${count} pull request di`, `opened ${count} pull requests in`);
+  const item = (pr: PullRequestItem) => (
+    <li key={pr.url}>
+      <a className="ax-pr" href={pr.url} target="_blank" rel="noopener noreferrer">
+        <PullRequestIcon merged={merged} />
+        <span className="ax-pr-title">{pr.title || `#${pr.number}`}</span>
+        <span className="ax-number">#{pr.number}</span>
+      </a>
+    </li>
+  );
   return (
     <div className="ax-event-body">
       <p className="ax-event-line">
-        <Who entry={entry} /> {merged ? tx(locale, "PR-nya di-merge di", "got a pull request merged in") : tx(locale, "membuka pull request di", "opened a pull request in")}{" "}
-        <RepoLink repo={entry.repo} />
+        <Who entry={entry} /> {what} <RepoLink repo={entry.repo} />
         <span className="ax-time">
           <RelativeTime value={entry.at} locale={locale} />
         </span>
       </p>
-      <a className="ax-pr" href={entry.url} target="_blank" rel="noopener noreferrer">
-        <PullRequestIcon merged={merged} />
-        <span className="ax-pr-title">{entry.title || `#${entry.number}`}</span>
-        <span className="ax-number">#{entry.number}</span>
-      </a>
+      <ul className="ax-prs">{shown.map(item)}</ul>
+      {folded.length > 0 ? (
+        <details className="ax-prs-more">
+          <summary>{tx(locale, `${folded.length} PR lainnya`, `${folded.length} more`)}</summary>
+          <ul className="ax-prs">{folded.map(item)}</ul>
+        </details>
+      ) : null}
       <ReactionBar url={entry.url} initial={reactions} viewerName={viewerName} />
     </div>
   );
