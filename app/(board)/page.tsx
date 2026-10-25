@@ -181,22 +181,48 @@ async function HowItWorks({ locale }: { locale: Locale }) {
   const viewer = await currentViewer();
   if (viewer && viewer.github && viewer.githubActivityShown) return null;
 
-  const steps = [
-    [tx(locale, "Masuk pakai GitHub", "Sign in with GitHub"), tx(locale, "Lalu centang \"Tampilkan aktivitas GitHub\" di profilmu.", "Then tick \"Show GitHub activity\" on your profile.")],
-    [tx(locale, "Pilih repo", "Pick a repo"), tx(locale, "Di bawah ini, cari yang ada \"Isu pemula\"-nya. Bukan programmer? Buka tab Peran lain.", "Below, look for one with \"Starter issues\". Not a programmer? Open the Other roles tab.")],
-    [tx(locale, "Kerjakan, bareng", "Work on it, together"), tx(locale, "Ambil satu issue. Mentok? Tanya di WA Community atau ke teman di badge repo-nya.", "Take one issue. Stuck? Ask on the WA Community, or the friend on the repo's badge.")],
-    [tx(locale, "PR di-merge, muncul sendiri", "PR merged, shown for you"), tx(locale, "Masuk ke halaman Aktivitas dan profilmu, tanpa perlu lapor.", "It lands on the Activity page and your profile, nothing to report.")],
+  const steps: { title: string; body: string; link?: { href: string; label: string } }[] = [
+    {
+      title: tx(locale, "Masuk pakai GitHub", "Sign in with GitHub"),
+      body: tx(locale, "Lalu centang \"Tampilkan aktivitas GitHub\" di profilmu.", "Then tick \"Show GitHub activity\" on your profile."),
+    },
+    ...(waCommunityUrl
+      ? [
+          {
+            title: tx(locale, "Gabung WA Community", "Join the WA Community"),
+            body: tx(locale, "Interaksi paling aktif ada di sana: tanya, cari reviewer, rayain PR yang di-merge.", "Where most of the talking happens: questions, finding a reviewer, cheering merged PRs."),
+            link: { href: waCommunityUrl, label: tx(locale, "Gabung WA", "Join on WA") },
+          },
+        ]
+      : []),
+    {
+      title: tx(locale, "Pilih repo", "Pick a repo"),
+      body: tx(locale, "Di bawah ini, cari yang ada \"Isu pemula\"-nya. Bukan programmer? Buka tab Peran lain.", "Below, look for one with \"Starter issues\". Not a programmer? Open the Other roles tab."),
+    },
+    {
+      title: tx(locale, "Kerjakan, bareng", "Work on it, together"),
+      body: tx(locale, "Ambil satu issue. Mentok? Tanya di grup WA atau ke teman di badge repo-nya.", "Take one issue. Stuck? Ask in the WA group, or the friend on the repo's badge."),
+    },
+    {
+      title: tx(locale, "PR di-merge, muncul sendiri", "PR merged, shown for you"),
+      body: tx(locale, "Masuk ke halaman Aktivitas dan profilmu, tanpa perlu lapor.", "It lands on the Activity page and your profile, nothing to report."),
+    },
   ];
   return (
     <section className="dx-how" aria-labelledby="dx-how-title">
       <h2 id="dx-how-title">{tx(locale, "Cara kerjanya", "How it works")}</h2>
-      <ol>
-        {steps.map(([title, body], index) => (
+      <ol style={{ "--dx-how-steps": steps.length } as React.CSSProperties}>
+        {steps.map(({ title, body, link }, index) => (
           <li key={title}>
             <span className="dx-how-step" aria-hidden="true">{index + 1}</span>
             <div>
               <strong>{title}</strong>
               <p>{body}</p>
+              {link ? (
+                <a className="dx-how-link" href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.label} <span aria-hidden="true">↗</span>
+                </a>
+              ) : null}
             </div>
           </li>
         ))}

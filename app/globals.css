@@ -1540,7 +1540,7 @@ form button[aria-busy="true"]::after,
 /* How a first contribution goes, under the heading, for whoever is still new. */
 .dx-how { border-bottom: 1px solid var(--dx-line); padding: 18px 0 20px; }
 .dx-how h2 { color: var(--dx-muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; margin: 0 0 12px; text-transform: uppercase; }
-.dx-how ol { display: grid; gap: 14px 20px; grid-template-columns: repeat(4, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
+.dx-how ol { display: grid; gap: 14px 20px; grid-template-columns: repeat(var(--dx-how-steps, 4), minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
 .dx-how li { display: flex; gap: 10px; }
 .dx-how-step {
   align-items: center; background: var(--dx-soft); border-radius: 999px; color: var(--dx-ink); display: inline-flex; flex: none;
@@ -1548,6 +1548,8 @@ form button[aria-busy="true"]::after,
 }
 .dx-how strong { display: block; font-size: 14px; font-weight: 650; line-height: 1.35; margin-top: 2px; }
 .dx-how p { color: var(--dx-muted); font-size: 13px; line-height: 1.5; margin: 3px 0 0; }
+.dx-how-link { color: light-dark(#1a7f37, #3fb950); display: inline-block; font-size: 13px; font-weight: 600; margin-top: 4px; }
+.dx-how-link:hover { text-decoration: underline; }
 .dx-how-more { color: var(--dx-ink); display: inline-block; font-size: 13px; font-weight: 600; margin-top: 12px; }
 .dx-how-more:hover { text-decoration: underline; }
 @media (max-width: 900px) { .dx-how ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
