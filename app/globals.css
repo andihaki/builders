@@ -2298,6 +2298,28 @@ footer .theme-row[aria-checked="true"] .theme-switch::after { transform: transla
   .ax-time { display: block; margin-left: 0; }
 }
 
+/* The builders site's product feed: the same timeline, a product's logo where
+   a person's face would be, and one line per thing that happened, each with
+   a small mark in its own tone so a new stage reads apart from an update. */
+.pfeed { max-width: 720px; }
+.ax-event > .pfeed-logo {
+  background: var(--paper); border-radius: 8px; box-shadow: 0 0 0 3px var(--paper); flex: none; font-size: 13px;
+  height: 32px; position: relative; width: 32px;
+}
+.ax-event > .pfeed-logo img { border-radius: 8px; height: 32px; width: 32px; }
+.ax-event > .pfeed-logo:not(:has(img)) { background: var(--dx-soft); }
+.pfeed-lines { display: grid; gap: 3px; list-style: none; margin: 4px 0 0; padding: 0; }
+.pfeed-line { color: var(--dx-text); font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; padding-left: 14px; position: relative; }
+.pfeed-line::before { background: var(--dx-faint); border-radius: 50%; content: ""; height: 6px; left: 0; position: absolute; top: .6em; width: 6px; }
+.pfeed-line a { color: var(--dx-ink); font-weight: 600; }
+.pfeed-line a:hover { text-decoration: underline; }
+.pfeed-line strong { font-weight: 600; }
+.pfeed-project_created::before { background: light-dark(#2f7d4f, #6fbf8b); }
+.pfeed-project_stage_changed::before { background: light-dark(#8250df, #b392f0); }
+.pfeed-update_posted::before { background: light-dark(#0969da, #4493f8); }
+.pfeed-seat_opened::before { background: light-dark(#c2761b, #e3a253); }
+.pfeed-seat_filled::before { background: light-dark(#bf3989, #e275ad); }
+
 /* Slack's reaction row under a pull request. */
 .reaction-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .reaction-pill, .reaction-add {

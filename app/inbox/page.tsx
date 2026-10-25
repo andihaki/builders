@@ -241,6 +241,15 @@ function NoticeLine({ notice, locale }: { notice: NoticeView; locale: Locale }) 
 function ReactionNotice({ notice, locale }: { notice: NoticeView; locale: Locale }) {
   const { url, repo, number, title, emoji, target, actor_name: name, actor_username: username } = notice.payload;
   const who = username ? <Link href={`/u/${username}`}>{name || `@${username}`}</Link> : <strong>{name || tx(locale, "Seseorang", "Somebody")}</strong>;
+  if (target === "event") {
+    const product = notice.payload.slug ? <Link href={`/projects/${notice.payload.slug}`}>{title || notice.payload.slug}</Link> : <strong>{title}</strong>;
+    return (
+      <p>
+        {who} {tx(locale, "memberi", "reacted")} {reactionEmoji(emoji ?? "")} {tx(locale, "untuk kabar", "to the news from")} {product}.{" "}
+        <Link href="/activity">{tx(locale, "Lihat di Aktivitas", "See it on Activity")}</Link>
+      </p>
+    );
+  }
   if (target === "commits") {
     return (
       <p>

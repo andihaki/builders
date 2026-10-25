@@ -19,11 +19,22 @@ export function isReactionKey(value: string): value is ReactionKey {
   return REACTIONS.some((reaction) => reaction.key === value);
 }
 
-/** What can be reacted to: a pull request's URL, or a member's commit summary. */
+/**
+ * What can be reacted to: a pull request's URL, a member's commit summary, or
+ * a day of a product on the builders feed, keyed by its first event. Keep in
+ * step with `activity_reactions_url` in
+ * supabase/migrations/20261101000000_product_feed_reactions.sql.
+ */
 const SUMMARY_KEY = /^commits:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const EVENT_KEY = /^event:[0-9]{1,18}$/;
 
 export function isReactionTarget(value: string): boolean {
-  return (value.startsWith("https://github.com/") && value.length <= 500) || SUMMARY_KEY.test(value);
+  return (value.startsWith("https://github.com/") && value.length <= 500) || SUMMARY_KEY.test(value) || EVENT_KEY.test(value);
+}
+
+/** The reaction key for a product's day on the builders feed. */
+export function eventReactionKey(eventId: number): string {
+  return `event:${eventId}`;
 }
 
 export function reactionEmoji(key: string): string {

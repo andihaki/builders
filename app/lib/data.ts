@@ -24,6 +24,7 @@ import { githubHandle, isOssRelation, mergeOssRows, type OssContribution, type O
 import type { Lane } from "./feed";
 import { buildGitHubActivity, type ActivityPerson, type GitHubActivityEntry } from "./github-activity";
 import type { ReactionRow } from "./reactions";
+import { FEED_KINDS } from "./product-feed";
 import { availabilityStatus, type AvailabilityStatus } from "./availability";
 import {
   normaliseRole,
@@ -1014,6 +1015,58 @@ async function queryPersonActivity(
   }
 
   return (data ?? []).map((row) => toActivity(row as EventRow));
+}
+
+/**
+ * The builders site's /activity: every member's product events, newest first
+ * — see app/lib/product-feed.ts for which kinds and how they are grouped.
+ *
+ * Read publicly, so the SELECT policy on `events` leaves out whatever an actor
+ * chose to hide, and cached for everybody: any event by anybody bumps
+ * `tags.activity` through trailChanged() in actions.ts. Actors' names come
+ * from the cached people list rather than a join, as the catalogue does.
+ */
+export async function listProductFeed(limit = 300): Promise<ActivityEvent[]> {
+  "use cache";
+  cacheLife("board");
+  cacheTag(tags.activity, tags.people);
+
+  const supabase = getPublicSupabase();
+  if (!supabase) {
+    return seedEvents
+      .filter((event) => (FEED_KINDS as readonly string[]).includes(event.kind))
+      .map((event) => {
+        const person = seedUsers.find((user) => user.id === event.actorId);
+        return {
+          id: event.id,
+          kind: event.kind,
+          createdAt: event.createdAt,
+          projectId: seedProjects.find((project) => project.slug === event.projectSlug)?.id ?? null,
+          projectSlug: event.payload.slug ?? event.projectSlug,
+          projectTitle: event.payload.title ?? "deleted project",
+          payload: event.payload,
+          actor: person ? { id: person.id, username: person.username, name: person.name } : null,
+        };
+      })
+      .sort((a, b) => b.id - a.id)
+      .slice(0, limit);
+  }
+
+  const [{ data, error }, people] = await Promise.all([
+    supabase.from("events").select("*").in("kind", [...FEED_KINDS]).order("id", { ascending: false }).limit(limit),
+    listPeople(1000),
+  ]);
+  if (error) {
+    if (!isMissingTable(error)) throw new Error(error.message);
+    warnMissingTable("events");
+    return [];
+  }
+
+  const byId = new Map(people.map((person) => [person.id, { id: person.id, username: person.username, name: person.name }]));
+  return (data ?? []).map((row) => {
+    const event = row as EventRow;
+    return toActivity({ ...event, actor: byId.get(event.actor_id) ?? null });
+  });
 }
 
 /** What a profile can claim in numbers, counted from the visible trail. */
