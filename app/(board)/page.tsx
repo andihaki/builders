@@ -60,8 +60,8 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               {/* What the place is for, in one line, for somebody who has just landed. */}
               {tx(
                 locale,
-                "Komunitas buat yang mau aktif di open source. Semua project di sini dikurasi bareng-bareng.",
-                "A community for people who want to be active in open source. Every project here is curated together.",
+                "Daftar project yang lagi nerima kontributor, dikurasi bareng oleh komunitas yang mau aktif di open source. Gabung buat ikut kontribusi dan nambahin project.",
+                "Projects that take contributors right now, curated together by a community that wants to be active in open source. Join to contribute and add projects of your own.",
               )}
             </p>
             <div className="dx-head-actions">
