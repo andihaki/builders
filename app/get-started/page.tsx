@@ -93,6 +93,8 @@ export default async function StartPage({
               "Selamat datang di sekumpulan orang yang sama-sama mau aktif di open source. Di sini kamu nggak mulai sendirian: ada teman yang udah duluan, maintainer yang kenal kamu, dan progres yang saling kelihatan.",
               "Welcome to a circle of people who all want to be active in open source. Here you do not start alone: there are friends who have been there, maintainers who know you, and progress everyone can see.",
             )}{" "}
+            <Link href="/how-it-works">{tx(locale, "Cara kerjanya", "How it works")}</Link>
+            {" · "}
             <Link href="/about#why-together">{tx(locale, "Kenapa bareng-bareng?", "Why together?")}</Link>
           </p>
           <p>
