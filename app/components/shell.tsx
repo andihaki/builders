@@ -516,6 +516,7 @@ export async function SiteFooter() {
       <nav aria-label={tx(locale, "Navigasi footer", "Footer navigation")}>
         <Link href="/">{tx(locale, "Direktori", "Directory")}</Link>
         <Link href="/submit">{tx(locale, "Usulkan project", "Suggest a project")}</Link>
+        <Link href="/how-it-works">{tx(locale, "Cara kerjanya", "How it works")}</Link>
         <Link href="/about">{tx(locale, "Tentang Kami", "About Us")}</Link>
         <Link href="/feedback">{tx(locale, "Masukan", "Feedback")}</Link>
         <Link href="/privacy">{tx(locale, "Privasi", "Privacy")}</Link>

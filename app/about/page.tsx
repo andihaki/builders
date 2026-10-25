@@ -330,9 +330,14 @@ export default async function AboutPage() {
               "Builders is the platform; the community behind it is Software Engineer Growth (swegrowth). The number we watch is not sign-ups but how many members get a PR merged into someone else's project each month.",
             )}
           </p>
-          <Link className="ab-more" href="/activity">
-            {tx(locale, "Lihat kontribusi member", "See members' contributions")} <Arrow />
-          </Link>
+          <p className="hw-more">
+            <Link className="ab-more" href="/how-it-works">
+              {tx(locale, "Langkah lengkapnya", "The steps in full")} <Arrow />
+            </Link>
+            <Link className="ab-more" href="/activity">
+              {tx(locale, "Lihat kontribusi member", "See members' contributions")} <Arrow />
+            </Link>
+          </p>
         </section>
 
         <section id="why-together" className="ab-section" aria-labelledby="together-title">

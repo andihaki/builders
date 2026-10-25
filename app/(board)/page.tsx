@@ -56,13 +56,12 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               {locale === "id" ? (
                 <>
                   Komunitas buat yang mau aktif di open source, bareng-bareng. Temukan project yang terbuka buat kontributor, kirim
-                  kontribusimu, dan biarkan kontribusimu terlihat. <Link href="/about#how">Cara kerjanya</Link>
+                  kontribusimu, dan biarkan kontribusimu terlihat.
                 </>
               ) : (
                 <>
                   A community for people who want to be active in open source, together. Find a project that takes contributors, send
-                  your contribution, and let it be seen.{" "}
-                  <Link href="/about#how">How it works</Link>
+                  your contribution, and let it be seen.
                 </>
               )}
             </p>
@@ -70,6 +69,9 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
               <Suspense fallback={<WaButton />}>
                 <JoinCta locale={locale} />
               </Suspense>
+              <Link className="dx-how-link" href="/how-it-works">
+                {tx(locale, "Cara kerjanya", "How it works")} <span aria-hidden="true">→</span>
+              </Link>
               <p className="dx-head-powered">
                 Powered by
                 <a href="https://swegrowth.id/" target="_blank" rel="noopener noreferrer">
@@ -82,10 +84,6 @@ export default async function Directory({ searchParams }: { searchParams?: Searc
             <HeadStats locale={locale} />
           </Suspense>
         </header>
-
-        <Suspense fallback={null}>
-          <HowItWorks locale={locale} />
-        </Suspense>
 
         <Suspense fallback={<DirectorySkeleton />}>
           <DirectoryBody query={query} locale={locale} />
@@ -168,69 +166,6 @@ async function JoinCta({ locale }: { locale: Locale }) {
         </a>
       ) : null}
     </>
-  );
-}
-
-/**
- * How a first contribution goes, in four short steps, right where somebody
- * lands: a link to /about#how at the end of a sentence was too easy to miss.
- * Shown to whoever the call to action is still asking something of — a
- * member who shows their GitHub activity already knows the loop.
- */
-async function HowItWorks({ locale }: { locale: Locale }) {
-  const viewer = await currentViewer();
-  if (viewer && viewer.github && viewer.githubActivityShown) return null;
-
-  const steps: { title: string; body: string; link?: { href: string; label: string } }[] = [
-    {
-      title: tx(locale, "Masuk pakai GitHub", "Sign in with GitHub"),
-      body: tx(locale, "Lalu centang \"Tampilkan aktivitas GitHub\" di profilmu.", "Then tick \"Show GitHub activity\" on your profile."),
-    },
-    ...(waCommunityUrl
-      ? [
-          {
-            title: tx(locale, "Gabung WA Community", "Join the WA Community"),
-            body: tx(locale, "Interaksi paling aktif ada di sana: tanya, cari reviewer, rayain PR yang di-merge.", "Where most of the talking happens: questions, finding a reviewer, cheering merged PRs."),
-            link: { href: waCommunityUrl, label: tx(locale, "Gabung WA", "Join on WA") },
-          },
-        ]
-      : []),
-    {
-      title: tx(locale, "Pilih repo", "Pick a repo"),
-      body: tx(locale, "Di bawah ini, cari yang ada \"Isu pemula\"-nya. Bukan programmer? Buka tab Peran lain.", "Below, look for one with \"Starter issues\". Not a programmer? Open the Other roles tab."),
-    },
-    {
-      title: tx(locale, "Kerjakan, bareng", "Work on it, together"),
-      body: tx(locale, "Ambil satu issue. Mentok? Tanya di grup WA atau ke teman di badge repo-nya.", "Take one issue. Stuck? Ask in the WA group, or the friend on the repo's badge."),
-    },
-    {
-      title: tx(locale, "PR di-merge, muncul sendiri", "PR merged, shown for you"),
-      body: tx(locale, "Masuk ke halaman Aktivitas dan profilmu, tanpa perlu lapor.", "It lands on the Activity page and your profile, nothing to report."),
-    },
-  ];
-  return (
-    <section className="dx-how" aria-labelledby="dx-how-title">
-      <h2 id="dx-how-title">{tx(locale, "Cara kerjanya", "How it works")}</h2>
-      <ol style={{ "--dx-how-steps": steps.length } as React.CSSProperties}>
-        {steps.map(({ title, body, link }, index) => (
-          <li key={title}>
-            <span className="dx-how-step" aria-hidden="true">{index + 1}</span>
-            <div>
-              <strong>{title}</strong>
-              <p>{body}</p>
-              {link ? (
-                <a className="dx-how-link" href={link.href} target="_blank" rel="noopener noreferrer">
-                  {link.label} <span aria-hidden="true">↗</span>
-                </a>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ol>
-      <Link className="dx-how-more" href="/about#how">
-        {tx(locale, "Selengkapnya", "More")} <span aria-hidden="true">→</span>
-      </Link>
-    </section>
   );
 }
 
