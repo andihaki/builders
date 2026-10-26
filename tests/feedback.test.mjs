@@ -5,11 +5,17 @@ import {
   FEEDBACK_KINDS,
   FEEDBACK_LIMITS,
   feedbackKindLabel,
+  feedbackRateLimitMessage,
   isFeedbackKind,
   validateFeedback,
 } from "../app/lib/feedback.ts";
 
 const usable = { kind: "bug", message: "Menyimpan profil berputar terus dan tidak ada pesan apa pun.", contact: "" };
+
+test("the hourly feedback limit has copy in both languages", () => {
+  assert.match(feedbackRateLimitMessage("id"), /5 masukan dalam sejam/);
+  assert.match(feedbackRateLimitMessage("en"), /5 feedback submissions per hour/);
+});
 
 test("a kind and a message are all that is asked for", () => {
   assert.deepEqual(validateFeedback(usable), {});

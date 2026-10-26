@@ -185,6 +185,8 @@ export type FeedbackRow = {
   message: string;
   contact: string;
   handled: boolean;
+  /** HMAC of a guest IP used for rate limiting; retained with the feedback row. */
+  guest_fingerprint: string | null;
   created_at: string;
 };
 
@@ -438,7 +440,13 @@ export type Database = {
       decide_proposal: { Args: { proposal_id: number; accept: boolean }; Returns: undefined };
       set_now: { Args: { project: number; line: string }; Returns: undefined };
       submit_feedback: {
-        Args: { feedback_kind: string; message?: string; contact?: string };
+        Args: {
+          feedback_kind: string;
+          message: string;
+          contact: string;
+          submitter_id: string | null;
+          guest_fingerprint_arg: string | null;
+        };
         Returns: undefined;
       };
     };

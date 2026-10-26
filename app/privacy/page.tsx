@@ -63,7 +63,7 @@ export default async function PrivacyPage() {
         <h3>{tx(locale, "Masukan", "Feedback")}</h3>
         <p>
           {tx(locale, "Masukan yang dikirim lewat", "Feedback sent through")} <Link href="/feedback">/feedback</Link>{" "}
-          {tx(locale, "menyimpan jenis masukan, isi pesanmu, dan email balasan jika kamu mengisinya. Jika kamu sedang masuk, akunmu ikut tercatat agar pengelola dapat menindaklanjuti. Masukan tidak pernah ditampilkan di halaman mana pun dan hanya dibaca pengelola; kamu boleh mengirimkannya tanpa akun.", "stores the kind of feedback, what you wrote, and a reply address if you gave one. If you are signed in, your account is recorded with it so the maintainers can follow up. Feedback is never shown on any page and is read by the maintainers only; you may send it without an account.")}
+          {tx(locale, "menyimpan jenis masukan, isi pesanmu, dan email balasan jika kamu mengisinya. Jika kamu sedang masuk, akunmu ikut tercatat agar pengelola dapat menindaklanjuti. Untuk membatasi spam dari pengunjung tanpa akun, sidik satu arah dari alamat IP disimpan bersama masukan; alamat IP aslinya tidak disimpan. Masukan tidak pernah ditampilkan di halaman mana pun dan hanya dibaca pengelola; kamu boleh mengirimkannya tanpa akun.", "stores the kind of feedback, what you wrote, and a reply address if you gave one. If you are signed in, your account is recorded with it so the maintainers can follow up. To limit spam from guests, a one-way fingerprint derived from the IP address is retained with the feedback; the IP address itself is not stored. Feedback is never shown on any page and is read by the maintainers only; you may send it without an account.")}
         </p>
 
         <h3>{tx(locale, "Data teknis", "Technical data")}</h3>

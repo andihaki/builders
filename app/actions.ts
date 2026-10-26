@@ -1,8 +1,12 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getSupabase, requireSupabase, type Supabase } from "./lib/supabase";
+import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
+import { requireSupabase, type Supabase } from "./lib/supabase";
+import { getFeedbackAdminSupabase } from "./lib/feedback-admin";
 import {
   MAXIMUM,
   domainOf,
@@ -36,6 +40,7 @@ import {
 import {
   EMPTY_FEEDBACK,
   FEEDBACK_LIMITS,
+  feedbackRateLimitMessage,
   validateFeedback,
   type FeedbackErrors,
   type FeedbackInput,
@@ -921,28 +926,54 @@ export async function sendFeedback(_state: FeedbackState, formData: FormData): P
   const errors = validateFeedback(values, locale);
   if (Object.keys(errors).length > 0) return { errors, values };
 
-  // Not `requireSupabase`: a checkout with no credentials still renders this
-  // page, and the person typing into it deserves a sentence rather than the
-  // error boundary swallowing what they wrote.
-  const supabase = await getSupabase();
-  if (!supabase) {
+  // Feedback writes use a server-only client: the public anon key must not be
+  // able to call the RPC directly and skip the app's guest rate limit.
+  const supabase = getFeedbackAdminSupabase();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabase || !serviceRoleKey) {
     return {
       errors: {
         form: tx(
           locale,
-          "Situs ini belum terhubung ke Supabase, jadi masukanmu belum bisa dikirim.",
-          "This site is not connected to Supabase yet, so your feedback cannot be sent.",
+          "Masukan belum dapat dikirim saat ini. Coba lagi nanti.",
+          "Feedback can't be sent right now. Please try again later.",
         ),
       },
       values,
     };
   }
 
+  const submitterId = await viewerId();
+  let guestFingerprint: string | null = null;
+  if (!submitterId) {
+    const requestHeaders = await headers();
+    let clientIp = requestHeaders.get("x-nf-client-connection-ip")?.trim() ?? "";
+    if (!clientIp && process.env.NODE_ENV !== "production") clientIp = "127.0.0.1";
+    if (!clientIp || isIP(clientIp) === 0) {
+      return {
+        errors: {
+          form: tx(
+            locale,
+            "Koneksi tidak dapat diverifikasi, jadi masukan belum dikirim. Coba lagi nanti.",
+            "We couldn't verify your connection, so your feedback wasn't sent. Please try again.",
+          ),
+        },
+        values,
+      };
+    }
+    guestFingerprint = createHmac("sha256", serviceRoleKey).update(clientIp).digest("hex");
+  }
+
   const { error } = await supabase.rpc("submit_feedback", {
     feedback_kind: values.kind,
     message: values.message.slice(0, FEEDBACK_LIMITS.message.max),
     contact: values.contact.slice(0, FEEDBACK_LIMITS.contact.max),
+    submitter_id: submitterId,
+    guest_fingerprint_arg: guestFingerprint,
   });
+  if (error?.code === "53400") {
+    return { errors: { form: feedbackRateLimitMessage(locale) }, values };
+  }
   if (error) return { errors: { form: error.message }, values };
 
   return { errors: {}, values: EMPTY_FEEDBACK, sent: true };

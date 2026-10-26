@@ -66,8 +66,8 @@ $$;
 
 -- The helpers are called while acting as anon/authenticated, so those roles
 -- need to be able to reach them.
-grant usage on schema checks to anon, authenticated;
-grant execute on all functions in schema checks to anon, authenticated;
+grant usage on schema checks to anon, authenticated, service_role;
+grant execute on all functions in schema checks to anon, authenticated, service_role;
 
 begin;
 
@@ -583,23 +583,30 @@ select checks.equal((select stage from public.projects where slug = 'kelas-sore'
 -- who wrote the row. Everything about it happens through submit_feedback().
 select checks.act_as('22222222-2222-4222-8222-222222222222');
 
-select checks.allowed($$select public.submit_feedback('idea', 'Tolong tambahkan filter berdasarkan bahasa.', 'dina@example.com')$$,
-                      'anggota mengirim masukan');
+select checks.denied($$select public.submit_feedback('idea', 'Tolong tambahkan filter berdasarkan bahasa.', 'dina@example.com', '22222222-2222-4222-8222-222222222222', null)$$,
+                     'anggota melewati server untuk mengirim masukan');
 select checks.denied($$select count(*) from public.feedback$$,
                      'anggota membaca kotak masukan');
 select checks.denied($$insert into public.feedback (kind, message) values ('bug', 'Lewat jalan belakang.')$$,
                      'anggota menulis langsung ke tabelnya');
-select checks.denied($$select public.submit_feedback('keluhan', 'Jenis yang tidak ada di daftarnya.')$$,
+
+-- Only the server's private key may call the RPC. It supplies the verified
+-- account id; the database remains the shared, atomic authority for the cap.
+reset role;
+set local role service_role;
+select checks.allowed($$select public.submit_feedback('idea', 'Tolong tambahkan filter berdasarkan bahasa.', 'dina@example.com', '22222222-2222-4222-8222-222222222222', null)$$,
+                      'server mengirim masukan atas nama anggota');
+select checks.denied($$select public.submit_feedback('keluhan', 'Jenis yang tidak ada di daftarnya.', '', '22222222-2222-4222-8222-222222222222', null)$$,
                      'jenis masukan karangan');
-select checks.denied($$select public.submit_feedback('bug', '   error   ')$$,
+select checks.denied($$select public.submit_feedback('bug', '   error   ', '', '22222222-2222-4222-8222-222222222222', null)$$,
                      'masukan sependek satu kata');
 
 -- Five in an hour is the cap; the sixth is refused.
-select checks.allowed($$select public.submit_feedback('bug', 'Masukan kedua dalam sejam ini.')$$, 'masukan ke-2');
-select checks.allowed($$select public.submit_feedback('bug', 'Masukan ketiga dalam sejam ini.')$$, 'masukan ke-3');
-select checks.allowed($$select public.submit_feedback('bug', 'Masukan keempat dalam sejam ini.')$$, 'masukan ke-4');
-select checks.allowed($$select public.submit_feedback('bug', 'Masukan kelima dalam sejam ini.')$$, 'masukan ke-5');
-select checks.denied($$select public.submit_feedback('bug', 'Masukan keenam dalam sejam ini.')$$,
+select checks.allowed($$select public.submit_feedback('bug', 'Masukan kedua dalam sejam ini.', '', '22222222-2222-4222-8222-222222222222', null)$$, 'masukan ke-2');
+select checks.allowed($$select public.submit_feedback('bug', 'Masukan ketiga dalam sejam ini.', '', '22222222-2222-4222-8222-222222222222', null)$$, 'masukan ke-3');
+select checks.allowed($$select public.submit_feedback('bug', 'Masukan keempat dalam sejam ini.', '', '22222222-2222-4222-8222-222222222222', null)$$, 'masukan ke-4');
+select checks.allowed($$select public.submit_feedback('bug', 'Masukan kelima dalam sejam ini.', '', '22222222-2222-4222-8222-222222222222', null)$$, 'masukan ke-5');
+select checks.denied($$select public.submit_feedback('bug', 'Masukan keenam dalam sejam ini.', '', '22222222-2222-4222-8222-222222222222', null)$$,
                      'masukan keenam kena batas sejam');
 
 reset role;
@@ -720,11 +727,28 @@ $$, 'tamu menaruh ide');
 select checks.denied($$select public.submit_proposal(null, (select id from public.seats limit 1), 'Tamu mengajukan bantuan.')$$,
                      'tamu mengajukan role');
 
--- Feedback is the one write a guest may make, and only through the function:
--- somebody who cannot get past the sign-in screen is exactly the person with
--- something to report.
-select checks.allowed($$select public.submit_feedback('bug', 'Masuk dengan Google berhenti di halaman kosong.')$$,
-                      'tamu mengirim masukan');
+-- Feedback still accepts guests, but only through the server-only RPC. The
+-- server fingerprints Netlify's client IP, and five submissions per IP/hour
+-- are allowed even when they arrive through separate app instances.
+select checks.denied($$select public.submit_feedback('bug', 'Masuk dengan Google berhenti di halaman kosong.', '', null, repeat('a', 64))$$,
+                     'tamu tidak dapat memanggil RPC secara langsung');
+set local role service_role;
+select checks.allowed($$select public.submit_feedback('bug', 'Masuk dengan Google berhenti di halaman kosong.', '', null, repeat('a', 64))$$,
+                      'tamu mengirim masukan pertama');
+select checks.allowed($$select public.submit_feedback('bug', 'Tombol simpan terus berputar lama sekali.', '', null, repeat('a', 64))$$,
+                      'tamu mengirim masukan kedua');
+select checks.allowed($$select public.submit_feedback('bug', 'Halaman profil menampilkan kesalahan saat dibuka.', '', null, repeat('a', 64))$$,
+                      'tamu mengirim masukan ketiga');
+select checks.allowed($$select public.submit_feedback('idea', 'Tambahkan filter berdasarkan topik proyek.', '', null, repeat('a', 64))$$,
+                      'tamu mengirim masukan keempat');
+select checks.allowed($$select public.submit_feedback('praise', 'Tampilan direktori proyek sangat membantu.', '', null, repeat('a', 64))$$,
+                      'tamu mengirim masukan kelima');
+select checks.denied($$select public.submit_feedback('bug', 'Masukan keenam tamu dalam sejam ini.', '', null, repeat('a', 64))$$,
+                     'masukan tamu keenam kena batas sejam');
+select checks.allowed($$select public.submit_feedback('bug', 'Masukan dari IP tamu berbeda.', '', null, repeat('b', 64))$$,
+                      'IP tamu berbeda memiliki kuota sendiri');
+reset role;
+select checks.act_as_guest();
 select checks.denied($$select count(*) from public.feedback$$, 'tamu membaca kotak masukan');
 select checks.denied($$insert into public.feedback (kind, message) values ('bug', 'Lewat jalan belakang.')$$,
                      'tamu menulis langsung ke tabelnya');
@@ -881,8 +905,8 @@ delete from public.oss_repos where repo = 'acme/direct';
 select checks.equal((select count(*)::int from public.oss_repos where repo = 'acme/direct'), 0, 'admin menghapus repo');
 
 reset role;
-select checks.equal((select count(*)::int from public.feedback where author_id is null), 1,
-                    'masukan tamu tersimpan tanpa penulis');
+select checks.equal((select count(*)::int from public.feedback where author_id is null), 6,
+                    'lima masukan tamu pertama dan satu dari IP berbeda tersimpan');
 
 rollback;
 

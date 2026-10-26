@@ -34,6 +34,15 @@ export const FEEDBACK_LIMITS = {
   contact: { max: 254 },
 } as const;
 
+/** Copy shown when the shared per-account or per-IP hourly quota is full. */
+export function feedbackRateLimitMessage(locale: Locale = "en"): string {
+  return tx(
+    locale,
+    "Kamu sudah mencapai batas 5 masukan dalam sejam terakhir. Coba lagi nanti.",
+    "You've reached the limit of 5 feedback submissions per hour. Please try again later.",
+  );
+}
+
 const FEEDBACK_META: Record<FeedbackKind, { label: string; blurb: string }> = {
   bug: {
     label: "Ada yang error",
