@@ -13,7 +13,6 @@ import {
 import { useRouter } from "next/navigation";
 import { LANGUAGE_COOKIE, tx as selectCopy, type Locale } from "../lib/locale";
 
-/** The browser's copy of the choice: every later request reads this. */
 function remember(locale: Locale) {
   document.cookie = `${LANGUAGE_COOKIE}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
